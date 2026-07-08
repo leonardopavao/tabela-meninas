@@ -197,7 +197,7 @@
   </div>
 </section>
 
-<section>
+<section id="secEvolucaoLoja">
   <div class="sec-head">
     <div><h2>Loja 2025 vs 2026, mês a mês</h2><p>O mês corrente aparece parcial — a comparação com o mesmo mês fechado de 2025 tende a ficar abaixo do real até o mês terminar.</p></div>
   </div>
@@ -283,15 +283,20 @@ function aplicarVisibilidadePorPapel(perfil){
   if(perfil.role === 'admin'){
     document.getElementById('pageSub').textContent = 'Dados ao vivo, direto da planilha de metas — visão completa da equipe.';
     document.getElementById('tituloConsultores').textContent = 'Desempenho por consultor';
+    document.getElementById('subConsultores').textContent = 'Valor real vendido (já descontadas devoluções) por mês, lado a lado.';
     document.getElementById('tituloRanking').textContent = 'Ranking acumulado';
     document.getElementById('tituloComissao').textContent = 'Comissões pagas — acumulado';
     document.getElementById('painelRanking').style.display = '';
+    document.getElementById('secMetaEvol').style.display = '';
+    document.getElementById('secEvolucaoLoja').style.display = '';
   } else {
-    document.getElementById('pageSub').textContent = `Seus números, ${perfil.nome}, e o desempenho geral da loja.`;
+    document.getElementById('pageSub').textContent = `Seus números, ${perfil.nome}.`;
     document.getElementById('tituloConsultores').textContent = 'Seu desempenho mensal';
-    document.getElementById('subConsultores').textContent = 'Seu valor real vendido por mês (já descontadas devoluções).';
+    document.getElementById('subConsultores').textContent = 'Sua meta e seu valor real vendido por mês (já descontadas devoluções).';
     document.getElementById('tituloComissao').textContent = 'Sua comissão acumulada';
     document.getElementById('painelRanking').style.display = 'none'; // não expõe números dos colegas
+    document.getElementById('secMetaEvol').style.display = 'none';   // não expõe faturamento da loja
+    document.getElementById('secEvolucaoLoja').style.display = 'none'; // não expõe faturamento da loja
   }
 }
 
@@ -380,21 +385,39 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
   const isAdmin = usuarioAtual.role === 'admin';
   const meuNome = usuarioAtual.nome;
 
-  // ---- KPIs (empresa inteira — todo mundo vê) ----
-  const totalRealYTD = MONTHS.slice(0,N).reduce((s,_,i)=> s + Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0), 0);
-  const totalMetaYTD = metaLoja.slice(0,N).reduce((a,b)=>a+b,0);
-  const totalComissaoYTD = Object.values(consultores).reduce((s,c)=>s+c.comissao.slice(0,N).reduce((a,b)=>a+b,0),0);
-  const pctAtingidoYTD = totalMetaYTD ? (totalRealYTD/totalMetaYTD)*100 : 0;
-  const evolTotal2025 = evolucao2025.slice(0,N).reduce((a,b)=>a+(b||0),0);
-  const evolTotal2026 = evolucao2026.slice(0,N).reduce((a,b)=>a+(b||0),0);
-  const evolPct = evolTotal2025 ? ((evolTotal2026-evolTotal2025)/evolTotal2025)*100 : 0;
+  let kpiData;
+  if(isAdmin){
+    // ---- KPIs da loja inteira ----
+    const totalRealYTD = MONTHS.slice(0,N).reduce((s,_,i)=> s + Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0), 0);
+    const totalMetaYTD = metaLoja.slice(0,N).reduce((a,b)=>a+b,0);
+    const totalComissaoYTD = Object.values(consultores).reduce((s,c)=>s+c.comissao.slice(0,N).reduce((a,b)=>a+b,0),0);
+    const pctAtingidoYTD = totalMetaYTD ? (totalRealYTD/totalMetaYTD)*100 : 0;
+    const evolTotal2025 = evolucao2025.slice(0,N).reduce((a,b)=>a+(b||0),0);
+    const evolTotal2026 = evolucao2026.slice(0,N).reduce((a,b)=>a+(b||0),0);
+    const evolPct = evolTotal2025 ? ((evolTotal2026-evolTotal2025)/evolTotal2025)*100 : 0;
 
-  const kpiData = [
-    {lbl:'Faturado da loja (acum.)', val: brl(totalRealYTD), delta: (pctAtingidoYTD>=100?'▲ ':'▼ ')+`${pct(Math.abs(pctAtingidoYTD-100))} ${pctAtingidoYTD>=100?'acima':'abaixo'} da meta`, up:pctAtingidoYTD>=100},
-    {lbl:'Meta da loja (acum.)', val: brl(totalMetaYTD), delta:`Atingimento: ${pct(pctAtingidoYTD)}`, neutral:true},
-    {lbl: isAdmin ? 'Comissões pagas (equipe)' : 'Sua comissão acumulada', val: isAdmin ? brl2(totalComissaoYTD) : brl2((consultores[meuNome]?.comissao||[]).slice(0,N).reduce((a,b)=>a+b,0)), delta:'', neutral:true},
-    {lbl:'Evolução vs 2025', val: pct(evolPct), delta: (evolPct>=0?'+':'')+brl(evolTotal2026-evolTotal2025)+' sobre 2025', up:evolPct>=0}
-  ];
+    kpiData = [
+      {lbl:'Faturado da loja (acum.)', val: brl(totalRealYTD), delta: (pctAtingidoYTD>=100?'▲ ':'▼ ')+`${pct(Math.abs(pctAtingidoYTD-100))} ${pctAtingidoYTD>=100?'acima':'abaixo'} da meta`, up:pctAtingidoYTD>=100},
+      {lbl:'Meta da loja (acum.)', val: brl(totalMetaYTD), delta:`Atingimento: ${pct(pctAtingidoYTD)}`, neutral:true},
+      {lbl:'Comissões pagas (equipe)', val: brl2(totalComissaoYTD), delta:'', neutral:true},
+      {lbl:'Evolução vs 2025', val: pct(evolPct), delta: (evolPct>=0?'+':'')+brl(evolTotal2026-evolTotal2025)+' sobre 2025', up:evolPct>=0}
+    ];
+  } else {
+    // ---- KPIs pessoais ----
+    const meu = consultores[meuNome] || {meta:[], real:[], comissao:[]};
+    const meuRealYTD = meu.real.slice(0,N).reduce((a,b)=>a+b,0);
+    const meuMetaYTD = meu.meta.slice(0,N).reduce((a,b)=>a+b,0);
+    const meuComissaoYTD = meu.comissao.slice(0,N).reduce((a,b)=>a+b,0);
+    const diff = meuRealYTD - meuMetaYTD;
+    const pctMinha = meuMetaYTD ? (meuRealYTD/meuMetaYTD)*100 : 0;
+
+    kpiData = [
+      {lbl:'Você vendeu (acum.)', val: brl(meuRealYTD), delta:`${pct(pctMinha)} da sua meta`, neutral:true},
+      {lbl:'Sua meta (acum.)', val: brl(meuMetaYTD), delta:'', neutral:true},
+      {lbl: diff>=0 ? 'Você ultrapassou a meta em' : 'Falta pra bater a meta', val: brl(Math.abs(diff)), delta: diff>=0 ? '▲ acima da meta' : '▼ abaixo da meta', up: diff>=0},
+      {lbl:'Sua comissão (acum.)', val: brl2(meuComissaoYTD), delta:'', neutral:true}
+    ];
+  }
   const kpiRow = document.getElementById('kpiRow'); kpiRow.innerHTML='';
   kpiData.forEach(k=>{
     const div = document.createElement('div'); div.className='kpi';
@@ -403,36 +426,44 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     kpiRow.appendChild(div);
   });
 
-  // ---- Meta x Realizado (empresa — todo mundo vê) ----
-  const realLoja = MONTHS.map((_,i)=> i<N ? Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0) : null);
-  charts.metaReal = new Chart(document.getElementById('chartMetaReal'), {
-    type:'bar',
-    data:{ labels:MONTHS, datasets:[
-      {label:'Meta', data:metaLoja, backgroundColor:'rgba(232,169,74,0.14)', borderRadius:6, borderSkipped:false},
-      {label:'Realizado', data:realLoja, backgroundColor:'#E8A94A', borderRadius:6, borderSkipped:false}
-    ]},
-    options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
-      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
-  });
+  // ---- Meta x Realizado e Evolução (loja) — só admin ----
+  if(isAdmin){
+    const realLoja = MONTHS.map((_,i)=> i<N ? Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0) : null);
+    charts.metaReal = new Chart(document.getElementById('chartMetaReal'), {
+      type:'bar',
+      data:{ labels:MONTHS, datasets:[
+        {label:'Meta', data:metaLoja, backgroundColor:'rgba(232,169,74,0.14)', borderRadius:6, borderSkipped:false},
+        {label:'Realizado', data:realLoja, backgroundColor:'#E8A94A', borderRadius:6, borderSkipped:false}
+      ]},
+      options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+        scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+    });
 
-  charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
-    type:'line',
-    data:{ labels:MONTHS, datasets:[
-      {label:'2025', data:evolucao2025, borderColor:'#7A6A55', backgroundColor:'transparent', tension:0.35, borderDash:[4,3], pointRadius:3},
-      {label:'2026', data:evolucao2026, borderColor:'#E8A94A', backgroundColor:'rgba(232,169,74,0.12)', tension:0.35, fill:true, pointRadius:3}
-    ]},
-    options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
-      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
-  });
+    charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
+      type:'line',
+      data:{ labels:MONTHS, datasets:[
+        {label:'2025', data:evolucao2025, borderColor:'#7A6A55', backgroundColor:'transparent', tension:0.35, borderDash:[4,3], pointRadius:3},
+        {label:'2026', data:evolucao2026, borderColor:'#E8A94A', backgroundColor:'rgba(232,169,74,0.12)', tension:0.35, fill:true, pointRadius:3}
+      ]},
+      options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+        scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+    });
+  }
 
-  // ---- Desempenho por consultor: admin vê todo mundo, vendedora vê só ela ----
+  // ---- Desempenho por consultor: admin vê todo mundo (comparativo), vendedora vê ela x meta dela ----
   const nomesVisiveis = isAdmin ? Object.keys(consultores) : [meuNome].filter(n=>consultores[n]);
+  const datasetsConsultor = isAdmin
+    ? nomesVisiveis.map(name=>({
+        label:name, data:consultores[name].real.slice(0,N), backgroundColor:consultores[name].color, borderRadius:5, borderSkipped:false
+      }))
+    : [
+        {label:'Meta', data:(consultores[meuNome]?.meta||[]).slice(0,N), backgroundColor:'rgba(232,169,74,0.14)', borderRadius:5, borderSkipped:false},
+        {label:'Realizado', data:(consultores[meuNome]?.real||[]).slice(0,N), backgroundColor:consultores[meuNome]?.color || '#E8A94A', borderRadius:5, borderSkipped:false}
+      ];
   charts.consultores = new Chart(document.getElementById('chartConsultores'), {
     type:'bar',
-    data:{ labels:MONTHS.slice(0,N), datasets:nomesVisiveis.map(name=>({
-      label:name, data:consultores[name].real.slice(0,N), backgroundColor:consultores[name].color, borderRadius:5, borderSkipped:false
-    })) },
-    options:{ responsive:true, plugins:{ legend:{ display:isAdmin, labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+brl(c.raw)}} },
+    data:{ labels:MONTHS.slice(0,N), datasets:datasetsConsultor },
+    options:{ responsive:true, plugins:{ legend:{ display:true, labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+brl(c.raw)}} },
       scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
   });
 
@@ -469,20 +500,22 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     comissaoConteudo.innerHTML = `<div class="bigstat"><div class="v">${brl2(minhaComissao)}</div><div class="l">acumulado no ano</div></div>`;
   }
 
-  // ---- Tabela evolução (empresa — todo mundo vê) ----
-  const tbody = document.querySelector('#evolTable tbody'); tbody.innerHTML='';
-  MONTHS.forEach((m,i)=>{
-    const v25 = evolucao2025[i]; const v26 = evolucao2026[i];
-    if(v25==null && v26==null) return;
-    const tr = document.createElement('tr');
-    if(v26==null){
-      tr.innerHTML = `<td>${m}</td><td>${v25!=null?brl(v25):'—'}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td><span class="tag" style="background:#241F18; color:var(--muted)">futuro</span></td>`;
-    } else {
-      const diff = v26-(v25||0); const p = v25 ? (diff/v25)*100 : 0; const cls = diff>=0?'pos':'neg';
-      tr.innerHTML = `<td>${m}</td><td>${brl(v25||0)}</td><td>${brl(v26)}</td><td class="${cls}">${diff>=0?'+':''}${brl(diff)}</td><td><span class="tag ${cls}">${diff>=0?'+':''}${pct(p)}</span></td>`;
-    }
-    tbody.appendChild(tr);
-  });
+  // ---- Tabela evolução (loja) — só admin ----
+  if(isAdmin){
+    const tbody = document.querySelector('#evolTable tbody'); tbody.innerHTML='';
+    MONTHS.forEach((m,i)=>{
+      const v25 = evolucao2025[i]; const v26 = evolucao2026[i];
+      if(v25==null && v26==null) return;
+      const tr = document.createElement('tr');
+      if(v26==null){
+        tr.innerHTML = `<td>${m}</td><td>${v25!=null?brl(v25):'—'}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td><span class="tag" style="background:#241F18; color:var(--muted)">futuro</span></td>`;
+      } else {
+        const diff = v26-(v25||0); const p = v25 ? (diff/v25)*100 : 0; const cls = diff>=0?'pos':'neg';
+        tr.innerHTML = `<td>${m}</td><td>${brl(v25||0)}</td><td>${brl(v26)}</td><td class="${cls}">${diff>=0?'+':''}${brl(diff)}</td><td><span class="tag ${cls}">${diff>=0?'+':''}${pct(p)}</span></td>`;
+      }
+      tbody.appendChild(tr);
+    });
+  }
 }
 
 setInterval(()=>{ if(usuarioAtual) carregarDados(); }, 5*60*1000);
