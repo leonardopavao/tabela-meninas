@@ -96,6 +96,8 @@
   .bigstat{text-align:center; padding:30px 10px;}
   .bigstat .v{font-family:'Fraunces',serif; font-size:40px; font-weight:600; color:var(--amber);}
   .bigstat .l{color:var(--muted); font-size:13px; margin-top:8px;}
+  #metaMesConteudo .v{font-family:'Fraunces',serif; font-size:32px; font-weight:600; color:var(--amber); line-height:1.15;}
+  #metaMesConteudo .l{color:var(--muted); font-size:13px; margin-top:10px; line-height:1.5;}
 
   table{width:100%; border-collapse:collapse; font-size:13.2px;}
   thead th{text-align:right; font-size:10.8px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--card-line);}
@@ -174,8 +176,10 @@
   <div class="grid-2">
     <div class="panel">
       <div class="sec-head" style="margin-bottom:18px;"><div><h2 id="tituloMetaMes">Falta pra bater a meta do mês</h2></div></div>
-      <div class="bigstat" id="metaMesConteudo" style="padding:10px 10px 6px;"></div>
-      <div class="rank-bar-wrap" style="margin-top:4px;"><div class="rank-bar" id="metaMesBarra" style="width:0%"></div></div>
+      <div style="display:flex; align-items:center; gap:28px; flex-wrap:wrap;">
+        <div id="bulbThermo" style="flex-shrink:0; width:110px;"></div>
+        <div id="metaMesConteudo" style="flex:1; min-width:180px; text-align:left; padding:0;"></div>
+      </div>
     </div>
     <div class="panel">
       <div class="sec-head" style="margin-bottom:18px;"><div><h2 id="tituloTopMes">🏆 Top vendedores do mês</h2></div></div>
@@ -323,6 +327,53 @@ const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov
 const CORES = { LEO:'#E8A94A', LARI:'#C97B4A', GEOVANA:'#8FA9C9' };
 
 function brl(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+function desenharLampada(pct){
+  const p = Math.max(0, Math.min(pct, 100)) / 100;
+  const bateu = pct >= 100;
+  // bulbo: círculo cx=70 cy=78 r=52 -> topo em y=26, base em y=130
+  const topoBulbo = 26, baseBulbo = 130, alturaBulbo = baseBulbo - topoBulbo;
+  const alturaLuz = alturaBulbo * p;
+  const yLuz = baseBulbo - alturaLuz;
+  const corLuz = bateu ? '#8FE0A0' : '#E8A94A';
+  const corLuzClara = bateu ? '#D9FBE0' : '#FFE4A8';
+  const glowOpacity = 0.15 + p*0.55;
+
+  return `
+  <svg viewBox="0 0 140 220" style="width:100%; height:auto; overflow:visible;">
+    <defs>
+      <clipPath id="clipBulbo"><circle cx="70" cy="78" r="52"/></clipPath>
+      <radialGradient id="gradLuz" cx="0.4" cy="0.3" r="0.8">
+        <stop offset="0%" stop-color="${corLuzClara}"/>
+        <stop offset="55%" stop-color="${corLuz}"/>
+        <stop offset="100%" stop-color="${corLuz}" stop-opacity="0.7"/>
+      </radialGradient>
+      <filter id="blurGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="9"/>
+      </filter>
+    </defs>
+
+    ${p>0.02 ? `<circle cx="70" cy="78" r="58" fill="${corLuz}" opacity="${glowOpacity}" filter="url(#blurGlow)"/>` : ''}
+
+    <circle cx="70" cy="78" r="52" fill="var(--bg-soft)" stroke="var(--card-line)" stroke-width="2.5"/>
+
+    <g clip-path="url(#clipBulbo)">
+      <rect x="10" y="${yLuz}" width="120" height="${alturaLuz+6}" fill="url(#gradLuz)"/>
+      ${p>0.03 ? `<ellipse cx="52" cy="${Math.max(yLuz+14,40)}" rx="12" ry="7" fill="#fff" opacity="0.35"/>` : ''}
+    </g>
+
+    <circle cx="70" cy="78" r="52" fill="none" stroke="var(--card-line)" stroke-width="2.5"/>
+
+    <path d="M70 40 L70 78 M55 62 L70 78 L85 62" stroke="${p>0.4?'#5A4526':'var(--card-line)'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${p>0.05?0.85:0.5}"/>
+
+    <rect x="55" y="128" width="30" height="22" rx="3" fill="#3A342A" stroke="var(--card-line)" stroke-width="1.5"/>
+    <rect x="57" y="134" width="26" height="3" fill="#242018"/>
+    <rect x="57" y="140" width="26" height="3" fill="#242018"/>
+    <rect x="58" y="150" width="24" height="10" rx="2" fill="#242018"/>
+
+    <text x="70" y="200" text-anchor="middle" font-family="Fraunces, serif" font-weight="600" font-size="22" fill="${bateu?'#8FE0A0':'var(--cream)'}">${Math.round(pct)}%</text>
+  </svg>`;
+}
 function brl2(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function pct(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
 
@@ -467,19 +518,22 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
   // ---- Falta pra bater a meta do mês (pessoal, todo mundo vê a sua própria) ----
   document.getElementById('tituloMetaMes').textContent = `Meta de ${nomeMesAtual}`;
   const meuMesConteudo = document.getElementById('metaMesConteudo');
-  const meuMesBarra = document.getElementById('metaMesBarra');
+  const bulbThermo = document.getElementById('bulbThermo');
   if(idxMes>=0 && consultores[meuNome]){
     const metaMes = consultores[meuNome].meta[idxMes] || 0;
     const realMes = consultores[meuNome].real[idxMes] || 0;
+    const comissaoMes = consultores[meuNome].comissao[idxMes] || 0;
     const faltaMes = metaMes - realMes;
     const pctMes = metaMes ? (realMes/metaMes*100) : 0;
+    bulbThermo.innerHTML = desenharLampada(pctMes);
+    const linhaComissao = `<div class="l" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--card-line);">Sua comissão do mês: <strong style="color:var(--cream)">${brl2(comissaoMes)}</strong></div>`;
     if(faltaMes <= 0){
-      meuMesConteudo.innerHTML = `<div class="v" style="color:var(--green)">Meta batida! 🎉</div><div class="l">${brl(realMes)} de ${brl(metaMes)} — ${pct(pctMes)}</div>`;
+      meuMesConteudo.innerHTML = `<div class="v" style="color:var(--green)">Meta batida! 🎉</div><div class="l">${brl(realMes)} de ${brl(metaMes)} — ${pct(pctMes)}</div>${linhaComissao}`;
     } else {
-      meuMesConteudo.innerHTML = `<div class="v">${brl(faltaMes)}</div><div class="l">faltam pra bater a meta de ${brl(metaMes)} (você já vendeu ${brl(realMes)} — ${pct(pctMes)})</div>`;
+      meuMesConteudo.innerHTML = `<div class="v">${brl(faltaMes)}</div><div class="l">faltam pra bater a meta de ${brl(metaMes)}<br>você já vendeu ${brl(realMes)} (${pct(pctMes)})</div>${linhaComissao}`;
     }
-    meuMesBarra.style.width = Math.min(pctMes,100)+'%';
   } else {
+    bulbThermo.innerHTML = desenharLampada(0);
     meuMesConteudo.innerHTML = `<div class="l">Sem dados do mês ainda.</div>`;
   }
 
