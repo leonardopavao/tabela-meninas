@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arq Luz — Painel de Vendas 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --bg:#14120E; --bg-soft:#1B1813; --card:#201C16; --card-line:#322C22;
+    --amber:#E8A94A; --amber-dim:#7A5A2A; --copper:#C97B4A; --cream:#F3ECDD;
+    --muted:#96897A; --green:#7FBF7F; --green-dim:#2C3626; --red:#D9694F; --red-dim:#3A2620;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(232,169,74,0.08), transparent),
+      radial-gradient(ellipse 700px 600px at 100% 10%, rgba(201,123,74,0.06), transparent),
+      var(--bg);
+    color:var(--cream); font-family:'Inter',sans-serif; min-height:100vh;
+  }
+  #app{padding:48px 6vw 90px; display:none;}
+
+  /* LOGIN */
+  #loginScreen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login-card{
+    background:var(--card); border:1px solid var(--card-line); border-radius:16px;
+    padding:44px 40px; width:100%; max-width:380px; text-align:center;
+  }
+  .login-card .bulb{width:56px; height:56px; margin:0 auto 18px;}
+  .login-card h1{font-family:'Fraunces',serif; font-size:24px; font-weight:600; margin-bottom:8px;}
+  .login-card p{color:var(--muted); font-size:13.5px; margin-bottom:28px;}
+  .field{margin-bottom:14px; text-align:left;}
+  .field label{font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); font-weight:600; display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; background:var(--bg-soft); border:1px solid var(--card-line); border-radius:8px;
+    padding:11px 13px; color:var(--cream); font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .field input:focus{outline:none; border-color:var(--amber);}
+  .btn-login{
+    width:100%; background:var(--amber); color:#241C10; border:none; border-radius:8px;
+    padding:12px; font-weight:700; font-size:14px; cursor:pointer; margin-top:8px; font-family:'Inter',sans-serif;
+  }
+  .btn-login:hover{background:#f0b862;}
+  .btn-login:disabled{opacity:0.6; cursor:default;}
+  .login-error{color:var(--red); font-size:12.5px; margin-top:14px; min-height:16px;}
+
+  .eyebrow{font-size:12px; letter-spacing:0.22em; text-transform:uppercase; color:var(--amber); font-weight:600; margin-bottom:10px;}
+  h1.title{font-family:'Fraunces',serif; font-weight:600; font-size:clamp(32px,4.2vw,52px); letter-spacing:-0.01em; line-height:1.05;}
+  .sub{color:var(--muted); font-size:15px; margin-top:12px; max-width:640px; line-height:1.55;}
+  header{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:24px; border-bottom:1px solid var(--card-line); padding-bottom:32px; margin-bottom:36px;}
+  .bulb{width:64px; height:64px; flex-shrink:0;}
+  .head-right{display:flex; align-items:center; gap:14px;}
+  .statuspill{font-size:12px; color:var(--muted); border:1px solid var(--card-line); padding:8px 14px; border-radius:100px; display:flex; align-items:center; gap:8px;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--green);}
+  .dot.loading{background:var(--amber); animation:pulse 1.2s infinite;}
+  .dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.3}}
+  .userpill{font-size:12.5px; color:var(--cream); border:1px solid var(--card-line); padding:8px 14px; border-radius:100px; display:flex; align-items:center; gap:10px;}
+  .userpill .role{color:var(--amber); font-weight:700; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase;}
+  .logout-btn{background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline;}
+  .logout-btn:hover{color:var(--cream);}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:40px;}
+  .kpi{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:22px 22px 20px; position:relative;}
+  .kpi .lbl{font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; font-weight:600;}
+  .kpi .val{font-family:'Fraunces',serif; font-size:28px; font-weight:600; line-height:1.1;}
+  .kpi .delta{font-size:12.5px; margin-top:10px;}
+  .delta.up{color:var(--green);} .delta.down{color:var(--red);}
+
+  section{margin-bottom:46px;}
+  .sec-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .sec-head h2{font-family:'Fraunces',serif; font-size:21px; font-weight:600;}
+  .sec-head p{font-size:13px; color:var(--muted); max-width:520px;}
+  .grid-2{display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
+  .panel{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:24px;}
+  .panel canvas{max-height:320px;}
+
+  .ranking{display:flex; flex-direction:column; gap:14px;}
+  .rank-row{display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:14px; padding:14px 16px; background:var(--bg-soft); border:1px solid var(--card-line); border-radius:10px;}
+  .rank-row.me{border-color:var(--amber);}
+  .rank-num{font-family:'Fraunces',serif; color:var(--amber-dim); font-size:20px; font-weight:600;}
+  .rank-row.first .rank-num{color:var(--amber);}
+  .rank-name{font-weight:600; font-size:14.5px;}
+  .rank-bar-wrap{grid-column:1/-1; height:6px; background:var(--card-line); border-radius:100px; overflow:hidden; margin-top:2px;}
+  .rank-bar{height:100%; border-radius:100px; background:linear-gradient(90deg, var(--amber-dim), var(--amber));}
+  .rank-meta{display:flex; flex-direction:column; align-items:flex-end;}
+  .rank-meta .v{font-size:14.5px; font-weight:700; font-family:'Fraunces',serif;}
+  .rank-meta .p{font-size:11.5px; color:var(--muted);}
+
+  .bigstat{text-align:center; padding:30px 10px;}
+  .bigstat .v{font-family:'Fraunces',serif; font-size:40px; font-weight:600; color:var(--amber);}
+  .bigstat .l{color:var(--muted); font-size:13px; margin-top:8px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.2px;}
+  thead th{text-align:right; font-size:10.8px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--card-line);}
+  thead th:first-child, tbody td:first-child{text-align:left;}
+  tbody td{padding:12px; text-align:right; border-bottom:1px solid var(--card-line);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(232,169,74,0.04);}
+  .pos{color:var(--green);} .neg{color:var(--red);}
+  .tag{display:inline-block; padding:3px 9px; border-radius:100px; font-size:11px; font-weight:600;}
+  .tag.pos{background:var(--green-dim); color:var(--green);}
+  .tag.neg{background:var(--red-dim); color:var(--red);}
+
+  footer{margin-top:60px; padding-top:24px; border-top:1px solid var(--card-line); font-size:12px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .errorbox{background:var(--red-dim); border:1px solid var(--red); color:var(--red); padding:16px 20px; border-radius:10px; margin-bottom:30px; font-size:13.5px; display:none;}
+
+  @media(max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} }
+  @media(max-width:560px){ .kpis{grid-template-columns:1fr;} #app{padding:32px 5vw 60px;} }
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <svg class="bulb" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="26" r="18" fill="url(#g0)"/>
+      <rect x="26" y="42" width="12" height="8" rx="2" fill="#4A4136"/>
+      <rect x="27" y="51" width="10" height="4" rx="2" fill="#332C22"/>
+      <path d="M32 14 L32 26 M25 20 L32 26 L39 20" stroke="#3A2E14" stroke-width="2" stroke-linecap="round"/>
+      <defs><radialGradient id="g0" cx="0.4" cy="0.35" r="0.75">
+        <stop offset="0%" stop-color="#FFE4A8"/><stop offset="55%" stop-color="#E8A94A"/><stop offset="100%" stop-color="#B5762E"/>
+      </radialGradient></defs>
+    </svg>
+    <h1>Painel Arq Luz</h1>
+    <p>Entre com seu e-mail e senha da equipe.</p>
+    <form id="loginForm">
+      <div class="field"><label>E-mail</label><input type="email" id="loginEmail" required autocomplete="username"></div>
+      <div class="field"><label>Senha</label><input type="password" id="loginSenha" required autocomplete="current-password"></div>
+      <button type="submit" class="btn-login" id="btnLogin">Entrar</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div id="app">
+
+<header>
+  <div style="display:flex; gap:18px; align-items:flex-start;">
+    <svg class="bulb" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="26" r="18" fill="url(#g1)"/>
+      <rect x="26" y="42" width="12" height="8" rx="2" fill="#4A4136"/>
+      <rect x="27" y="51" width="10" height="4" rx="2" fill="#332C22"/>
+      <path d="M32 14 L32 26 M25 20 L32 26 L39 20" stroke="#3A2E14" stroke-width="2" stroke-linecap="round"/>
+      <defs><radialGradient id="g1" cx="0.4" cy="0.35" r="0.75">
+        <stop offset="0%" stop-color="#FFE4A8"/><stop offset="55%" stop-color="#E8A94A"/><stop offset="100%" stop-color="#B5762E"/>
+      </radialGradient></defs>
+    </svg>
+    <div>
+      <div class="eyebrow">Arq Luz Iluminação · Correa &amp; Pavão Ltda</div>
+      <h1 class="title" id="pageTitle">Painel de Vendas 2026</h1>
+      <p class="sub" id="pageSub">Dados ao vivo, direto da planilha de metas.</p>
+    </div>
+  </div>
+  <div class="head-right">
+    <div class="statuspill" id="statusPill"><span class="dot loading" id="statusDot"></span><span id="statusText">Carregando dados...</span></div>
+    <div class="userpill"><span id="userNome">—</span><span class="role" id="userRole">—</span></div>
+    <button class="logout-btn" id="btnLogout">sair</button>
+  </div>
+</header>
+
+<div class="errorbox" id="errorBox"></div>
+
+<div class="kpis" id="kpiRow"></div>
+
+<section id="secMetaEvol">
+  <div class="sec-head">
+    <div><h2>Meta × Realizado por mês</h2><p id="secMetaEvolSub">Faturamento realizado pela loja frente à meta mensal combinada da equipe.</p></div>
+  </div>
+  <div class="grid-2">
+    <div class="panel"><canvas id="chartMetaReal"></canvas></div>
+    <div class="panel"><canvas id="chartEvolucao"></canvas></div>
+  </div>
+</section>
+
+<section id="secConsultores">
+  <div class="sec-head"><div><h2 id="tituloConsultores">Desempenho por consultor</h2><p id="subConsultores">Valor real vendido (já descontadas devoluções) por mês, lado a lado.</p></div></div>
+  <div class="panel"><canvas id="chartConsultores" style="max-height:340px;"></canvas></div>
+</section>
+
+<section id="secRankingComissao">
+  <div class="grid-2">
+    <div class="panel" id="painelRanking">
+      <div class="sec-head" style="margin-bottom:20px;"><div><h2 id="tituloRanking">Ranking acumulado</h2></div></div>
+      <div class="ranking" id="rankingBox"></div>
+    </div>
+    <div class="panel" id="painelComissao">
+      <div class="sec-head" style="margin-bottom:16px;"><div><h2 id="tituloComissao">Comissões pagas — acumulado</h2></div></div>
+      <div id="comissaoConteudo"><canvas id="chartComissao" style="max-height:280px;"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><h2>Loja 2025 vs 2026, mês a mês</h2><p>O mês corrente aparece parcial — a comparação com o mesmo mês fechado de 2025 tende a ficar abaixo do real até o mês terminar.</p></div>
+  </div>
+  <div class="panel" style="padding:0; overflow-x:auto;">
+    <table id="evolTable"><thead><tr><th>Mês</th><th>2025</th><th>2026</th><th>Diferença</th><th>Evolução</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<footer>
+  <span>Arq Luz Iluminação — Votuporanga/SP</span>
+  <span id="lastUpdated">—</span>
+</footer>
+
+</div><!-- /#app -->
+
+<script>
+/* ======================================================
+   CONFIG — preencha com os dados do seu projeto Firebase
+   (o mesmo que você já usa no arqluz-pedidos / entregas)
+   ====================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI.firebaseapp.com",
+  projectId: "COLE_AQUI",
+};
+
+const API_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT';
+
+/* Mapa de quem pode entrar e o que cada um vê.
+   'admin'     -> vê tudo (Leo)
+   'vendedora' -> vê só o próprio desempenho + números da empresa
+   Crie esses usuários em: Firebase Console > Authentication > Users */
+const USUARIOS = {
+  'leo@arqluziluminacao.com':      { role: 'admin',     nome: 'LEO' },
+  'larissa@arqluziluminacao.com':  { role: 'vendedora', nome: 'LARI' },
+  'geovana@arqluziluminacao.com':  { role: 'vendedora', nome: 'GEOVANA' }
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+
+let usuarioAtual = null;
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const btn = document.getElementById('btnLogin');
+  const errBox = document.getElementById('loginError');
+  errBox.textContent = '';
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try{
+    await auth.signInWithEmailAndPassword(email, senha);
+  } catch(err){
+    errBox.textContent = 'E-mail ou senha incorretos.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+});
+
+document.getElementById('btnLogout').addEventListener('click', ()=> auth.signOut());
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    const perfil = USUARIOS[user.email.toLowerCase()];
+    if(!perfil){
+      document.getElementById('loginError').textContent = 'Este usuário não tem acesso ao painel.';
+      auth.signOut();
+      return;
+    }
+    usuarioAtual = perfil;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('userNome').textContent = perfil.nome;
+    document.getElementById('userRole').textContent = perfil.role === 'admin' ? 'admin' : 'vendedora';
+    aplicarVisibilidadePorPapel(perfil);
+    carregarDados();
+  } else {
+    usuarioAtual = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+});
+
+function aplicarVisibilidadePorPapel(perfil){
+  if(perfil.role === 'admin'){
+    document.getElementById('pageSub').textContent = 'Dados ao vivo, direto da planilha de metas — visão completa da equipe.';
+    document.getElementById('tituloConsultores').textContent = 'Desempenho por consultor';
+    document.getElementById('tituloRanking').textContent = 'Ranking acumulado';
+    document.getElementById('tituloComissao').textContent = 'Comissões pagas — acumulado';
+    document.getElementById('painelRanking').style.display = '';
+  } else {
+    document.getElementById('pageSub').textContent = `Seus números, ${perfil.nome}, e o desempenho geral da loja.`;
+    document.getElementById('tituloConsultores').textContent = 'Seu desempenho mensal';
+    document.getElementById('subConsultores').textContent = 'Seu valor real vendido por mês (já descontadas devoluções).';
+    document.getElementById('tituloComissao').textContent = 'Sua comissão acumulada';
+    document.getElementById('painelRanking').style.display = 'none'; // não expõe números dos colegas
+  }
+}
+
+/* ======================================================
+   DADOS
+   ====================================================== */
+const MONTHS_UPPER = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const CORES = { LEO:'#E8A94A', LARI:'#C97B4A', GEOVANA:'#8FA9C9' };
+
+function brl(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}); }
+function brl2(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function pct(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
+
+function setStatus(state, text){
+  document.getElementById('statusDot').className = 'dot ' + state;
+  document.getElementById('statusText').textContent = text;
+}
+
+async function carregarDados(){
+  if(!API_URL || API_URL.includes('COLE_AQUI')){
+    setStatus('error','API não configurada');
+    document.getElementById('errorBox').style.display = 'block';
+    document.getElementById('errorBox').textContent = 'Configure API_URL no topo do arquivo com a URL do seu Apps Script Web App.';
+    return;
+  }
+  try{
+    setStatus('loading','Carregando dados...');
+    const res = await fetch(API_URL);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    montarDashboard(json);
+    document.getElementById('statusDot').className = 'dot';
+    document.getElementById('statusText').textContent = 'Dados ao vivo';
+    document.getElementById('lastUpdated').textContent = 'Atualizado em ' + new Date(json.atualizadoEm).toLocaleString('pt-BR');
+  } catch(err){
+    setStatus('error','Erro ao carregar');
+    document.getElementById('errorBox').style.display = 'block';
+    document.getElementById('errorBox').textContent = 'Não consegui buscar os dados da planilha (' + err.message + ').';
+  }
+}
+
+function montarDashboard(json){
+  const registros = json.registros || [];
+  const vendas2025 = json.vendas2025 || [];
+
+  const consultores = {};
+  registros.forEach(r=>{
+    if(!consultores[r.consultor]) consultores[r.consultor] = { meta: Array(12).fill(0), real: Array(12).fill(0), comissao: Array(12).fill(0), color: CORES[r.consultor] || '#AAAAAA' };
+    const idx = MONTHS_UPPER.indexOf(String(r.mes).toUpperCase());
+    if(idx === -1) return;
+    consultores[r.consultor].meta[idx] = r.meta;
+    consultores[r.consultor].real[idx] = r.valorReal;
+    consultores[r.consultor].comissao[idx] = r.comissao;
+  });
+
+  const metaLoja = Array(12).fill(0);
+  registros.forEach(r=>{
+    const idx = MONTHS_UPPER.indexOf(String(r.mes).toUpperCase());
+    if(idx !== -1 && r.metaMensalLoja) metaLoja[idx] = r.metaMensalLoja;
+  });
+
+  const mesesComDados = new Set();
+  registros.forEach(r=>{
+    const idx = MONTHS_UPPER.indexOf(String(r.mes).toUpperCase());
+    if(idx !== -1 && (r.valorReal > 0 || r.vendas > 0)) mesesComDados.add(idx);
+  });
+  const N = mesesComDados.size ? Math.max(...mesesComDados) + 1 : 0;
+
+  const evolucao2025 = Array(12).fill(null);
+  vendas2025.forEach(v=>{ if(v.mes>=1 && v.mes<=12) evolucao2025[v.mes-1] = v.total; });
+
+  const evolucao2026 = Array(12).fill(null);
+  for(let i=0;i<N;i++){
+    evolucao2026[i] = Object.values(consultores).reduce((s,c)=>s+(c.real[i]||0),0);
+  }
+
+  renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N});
+}
+
+let charts = {};
+function destruirCharts(){ Object.values(charts).forEach(c=>c && c.destroy()); charts = {}; }
+
+function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
+  destruirCharts();
+  const isAdmin = usuarioAtual.role === 'admin';
+  const meuNome = usuarioAtual.nome;
+
+  // ---- KPIs (empresa inteira — todo mundo vê) ----
+  const totalRealYTD = MONTHS.slice(0,N).reduce((s,_,i)=> s + Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0), 0);
+  const totalMetaYTD = metaLoja.slice(0,N).reduce((a,b)=>a+b,0);
+  const totalComissaoYTD = Object.values(consultores).reduce((s,c)=>s+c.comissao.slice(0,N).reduce((a,b)=>a+b,0),0);
+  const pctAtingidoYTD = totalMetaYTD ? (totalRealYTD/totalMetaYTD)*100 : 0;
+  const evolTotal2025 = evolucao2025.slice(0,N).reduce((a,b)=>a+(b||0),0);
+  const evolTotal2026 = evolucao2026.slice(0,N).reduce((a,b)=>a+(b||0),0);
+  const evolPct = evolTotal2025 ? ((evolTotal2026-evolTotal2025)/evolTotal2025)*100 : 0;
+
+  const kpiData = [
+    {lbl:'Faturado da loja (acum.)', val: brl(totalRealYTD), delta: (pctAtingidoYTD>=100?'▲ ':'▼ ')+`${pct(Math.abs(pctAtingidoYTD-100))} ${pctAtingidoYTD>=100?'acima':'abaixo'} da meta`, up:pctAtingidoYTD>=100},
+    {lbl:'Meta da loja (acum.)', val: brl(totalMetaYTD), delta:`Atingimento: ${pct(pctAtingidoYTD)}`, neutral:true},
+    {lbl: isAdmin ? 'Comissões pagas (equipe)' : 'Sua comissão acumulada', val: isAdmin ? brl2(totalComissaoYTD) : brl2((consultores[meuNome]?.comissao||[]).slice(0,N).reduce((a,b)=>a+b,0)), delta:'', neutral:true},
+    {lbl:'Evolução vs 2025', val: pct(evolPct), delta: (evolPct>=0?'+':'')+brl(evolTotal2026-evolTotal2025)+' sobre 2025', up:evolPct>=0}
+  ];
+  const kpiRow = document.getElementById('kpiRow'); kpiRow.innerHTML='';
+  kpiData.forEach(k=>{
+    const div = document.createElement('div'); div.className='kpi';
+    div.innerHTML = `<div class="lbl">${k.lbl}</div><div class="val">${k.val}</div>
+      <div class="delta ${k.neutral?'':(k.up?'up':'down')}">${k.neutral?'<span style="color:var(--muted)">'+k.delta+'</span>':k.delta}</div>`;
+    kpiRow.appendChild(div);
+  });
+
+  // ---- Meta x Realizado (empresa — todo mundo vê) ----
+  const realLoja = MONTHS.map((_,i)=> i<N ? Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0) : null);
+  charts.metaReal = new Chart(document.getElementById('chartMetaReal'), {
+    type:'bar',
+    data:{ labels:MONTHS, datasets:[
+      {label:'Meta', data:metaLoja, backgroundColor:'rgba(232,169,74,0.14)', borderRadius:6, borderSkipped:false},
+      {label:'Realizado', data:realLoja, backgroundColor:'#E8A94A', borderRadius:6, borderSkipped:false}
+    ]},
+    options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+  });
+
+  charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
+    type:'line',
+    data:{ labels:MONTHS, datasets:[
+      {label:'2025', data:evolucao2025, borderColor:'#7A6A55', backgroundColor:'transparent', tension:0.35, borderDash:[4,3], pointRadius:3},
+      {label:'2026', data:evolucao2026, borderColor:'#E8A94A', backgroundColor:'rgba(232,169,74,0.12)', tension:0.35, fill:true, pointRadius:3}
+    ]},
+    options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+  });
+
+  // ---- Desempenho por consultor: admin vê todo mundo, vendedora vê só ela ----
+  const nomesVisiveis = isAdmin ? Object.keys(consultores) : [meuNome].filter(n=>consultores[n]);
+  charts.consultores = new Chart(document.getElementById('chartConsultores'), {
+    type:'bar',
+    data:{ labels:MONTHS.slice(0,N), datasets:nomesVisiveis.map(name=>({
+      label:name, data:consultores[name].real.slice(0,N), backgroundColor:consultores[name].color, borderRadius:5, borderSkipped:false
+    })) },
+    options:{ responsive:true, plugins:{ legend:{ display:isAdmin, labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+brl(c.raw)}} },
+      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+  });
+
+  // ---- Ranking: só admin ----
+  if(isAdmin){
+    const rankData = Object.entries(consultores).map(([name,c])=>{
+      const realYTD = c.real.slice(0,N).reduce((a,b)=>a+b,0);
+      const metaYTD = c.meta.slice(0,N).reduce((a,b)=>a+b,0);
+      return {name, realYTD, pctAting: metaYTD ? (realYTD/metaYTD)*100 : 0, color:c.color};
+    }).sort((a,b)=>b.realYTD-a.realYTD);
+    const maxReal = rankData.length ? rankData[0].realYTD : 1;
+    const rankingBox = document.getElementById('rankingBox'); rankingBox.innerHTML='';
+    rankData.forEach((r,i)=>{
+      const row = document.createElement('div'); row.className='rank-row'+(i===0?' first':'');
+      row.innerHTML = `<div class="rank-num">${i+1}</div><div class="rank-name">${r.name}</div>
+        <div class="rank-meta"><div class="v">${brl(r.realYTD)}</div><div class="p">${pct(r.pctAting)} da meta</div></div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${maxReal? (r.realYTD/maxReal*100):0}%; background:linear-gradient(90deg, ${r.color}55, ${r.color})"></div></div>`;
+      rankingBox.appendChild(row);
+    });
+  }
+
+  // ---- Comissão: admin vê donut comparativo, vendedora vê só o próprio total em destaque ----
+  const comissaoConteudo = document.getElementById('comissaoConteudo');
+  if(isAdmin){
+    comissaoConteudo.innerHTML = '<canvas id="chartComissao" style="max-height:280px;"></canvas>';
+    const comissaoTotais = Object.values(consultores).map(c=>c.comissao.slice(0,N).reduce((a,b)=>a+b,0));
+    charts.comissao = new Chart(document.getElementById('chartComissao'), {
+      type:'doughnut',
+      data:{ labels:Object.keys(consultores), datasets:[{data:comissaoTotais, backgroundColor:Object.values(consultores).map(c=>c.color), borderColor:'#201C16', borderWidth:3}] },
+      options:{ responsive:true, cutout:'62%', plugins:{ legend:{position:'bottom', labels:{color:'#96897A', padding:16}}, tooltip:{callbacks:{label:(c)=>c.label+': '+brl2(c.raw)}} } }
+    });
+  } else {
+    const minhaComissao = (consultores[meuNome]?.comissao||[]).slice(0,N).reduce((a,b)=>a+b,0);
+    comissaoConteudo.innerHTML = `<div class="bigstat"><div class="v">${brl2(minhaComissao)}</div><div class="l">acumulado no ano</div></div>`;
+  }
+
+  // ---- Tabela evolução (empresa — todo mundo vê) ----
+  const tbody = document.querySelector('#evolTable tbody'); tbody.innerHTML='';
+  MONTHS.forEach((m,i)=>{
+    const v25 = evolucao2025[i]; const v26 = evolucao2026[i];
+    if(v25==null && v26==null) return;
+    const tr = document.createElement('tr');
+    if(v26==null){
+      tr.innerHTML = `<td>${m}</td><td>${v25!=null?brl(v25):'—'}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td><span class="tag" style="background:#241F18; color:var(--muted)">futuro</span></td>`;
+    } else {
+      const diff = v26-(v25||0); const p = v25 ? (diff/v25)*100 : 0; const cls = diff>=0?'pos':'neg';
+      tr.innerHTML = `<td>${m}</td><td>${brl(v25||0)}</td><td>${brl(v26)}</td><td class="${cls}">${diff>=0?'+':''}${brl(diff)}</td><td><span class="tag ${cls}">${diff>=0?'+':''}${pct(p)}</span></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+setInterval(()=>{ if(usuarioAtual) carregarDados(); }, 5*60*1000);
+</script>
+</body>
+</html>
