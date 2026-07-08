@@ -7,8 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --bg:#14120E; --bg-soft:#1B1813; --card:#201C16; --card-line:#322C22;
@@ -131,9 +129,8 @@
       </radialGradient></defs>
     </svg>
     <h1>Painel Arq Luz</h1>
-    <p>Entre com seu e-mail e senha da equipe.</p>
+    <p>Digite sua senha de acesso.</p>
     <form id="loginForm">
-      <div class="field"><label>E-mail</label><input type="email" id="loginEmail" required autocomplete="username"></div>
       <div class="field"><label>Senha</label><input type="password" id="loginSenha" required autocomplete="current-password"></div>
       <button type="submit" class="btn-login" id="btnLogin">Entrar</button>
       <div class="login-error" id="loginError"></div>
@@ -218,72 +215,69 @@
 
 <script>
 /* ======================================================
-   CONFIG — preencha com os dados do seu projeto Firebase
-   (o mesmo que você já usa no arqluz-pedidos / entregas)
+   CONFIG — cole a URL do seu Apps Script Web App
    ====================================================== */
-const FIREBASE_CONFIG = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI.firebaseapp.com",
-  projectId: "COLE_AQUI",
-};
-
 const API_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT';
 
-/* Mapa de quem pode entrar e o que cada um vê.
+/* Senha de cada pessoa + o que ela vê.
    'admin'     -> vê tudo (Leo)
    'vendedora' -> vê só o próprio desempenho + números da empresa
-   Crie esses usuários em: Firebase Console > Authentication > Users */
+   Troque as senhas abaixo pelas que quiser usar. */
 const USUARIOS = {
-  'leo@arqluziluminacao.com':      { role: 'admin',     nome: 'LEO' },
-  'larissa@arqluziluminacao.com':  { role: 'vendedora', nome: 'LARI' },
-  'geovana@arqluziluminacao.com':  { role: 'vendedora', nome: 'GEOVANA' }
+  '123':      { role: 'admin',     nome: 'LEO' },
+  '1234':     { role: 'vendedora', nome: 'LARI' },
+  '12345':    { role: 'vendedora', nome: 'GEOVANA' }
 };
 
-firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
+/* Aviso: essa senha fica visível para quem abrir o código-fonte do site.
+   É suficiente pra impedir acesso casual, mas não é um cofre — não use
+   pra proteger dado ultra-sensível nem reaproveite senha de outro lugar. */
 
 let usuarioAtual = null;
 
-document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+document.getElementById('loginForm').addEventListener('submit', (e)=>{
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim();
   const senha = document.getElementById('loginSenha').value;
-  const btn = document.getElementById('btnLogin');
   const errBox = document.getElementById('loginError');
   errBox.textContent = '';
-  btn.disabled = true; btn.textContent = 'Entrando...';
-  try{
-    await auth.signInWithEmailAndPassword(email, senha);
-  } catch(err){
-    errBox.textContent = 'E-mail ou senha incorretos.';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Entrar';
+  const perfil = USUARIOS[senha];
+  if(!perfil){
+    errBox.textContent = 'Senha incorreta.';
+    return;
   }
+  usuarioAtual = perfil;
+  sessionStorage.setItem('arqluz_role', perfil.role);
+  sessionStorage.setItem('arqluz_nome', perfil.nome);
+  entrarNoApp(perfil);
 });
 
-document.getElementById('btnLogout').addEventListener('click', ()=> auth.signOut());
-
-auth.onAuthStateChanged(user=>{
-  if(user){
-    const perfil = USUARIOS[user.email.toLowerCase()];
-    if(!perfil){
-      document.getElementById('loginError').textContent = 'Este usuário não tem acesso ao painel.';
-      auth.signOut();
-      return;
-    }
-    usuarioAtual = perfil;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('userNome').textContent = perfil.nome;
-    document.getElementById('userRole').textContent = perfil.role === 'admin' ? 'admin' : 'vendedora';
-    aplicarVisibilidadePorPapel(perfil);
-    carregarDados();
-  } else {
-    usuarioAtual = null;
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-  }
+document.getElementById('btnLogout').addEventListener('click', ()=>{
+  usuarioAtual = null;
+  sessionStorage.removeItem('arqluz_role');
+  sessionStorage.removeItem('arqluz_nome');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginSenha').value = '';
 });
+
+function entrarNoApp(perfil){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('userNome').textContent = perfil.nome;
+  document.getElementById('userRole').textContent = perfil.role === 'admin' ? 'admin' : 'vendedora';
+  aplicarVisibilidadePorPapel(perfil);
+  carregarDados();
+}
+
+// mantém logado se já autenticou nesta aba (sessionStorage some ao fechar o navegador)
+(function tentarSessaoExistente(){
+  const role = sessionStorage.getItem('arqluz_role');
+  const nome = sessionStorage.getItem('arqluz_nome');
+  if(role && nome){
+    usuarioAtual = { role, nome };
+    entrarNoApp(usuarioAtual);
+  }
+})();
 
 function aplicarVisibilidadePorPapel(perfil){
   if(perfil.role === 'admin'){
