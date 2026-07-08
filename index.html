@@ -82,7 +82,8 @@
 
   .ranking{display:flex; flex-direction:column; gap:14px;}
   .rank-row{display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:14px; padding:14px 16px; background:var(--bg-soft); border:1px solid var(--card-line); border-radius:10px;}
-  .rank-row.me{border-color:var(--amber);}
+  .rank-row.me{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset;}
+  .medal{font-size:20px;}
   .rank-num{font-family:'Fraunces',serif; color:var(--amber-dim); font-size:20px; font-weight:600;}
   .rank-row.first .rank-num{color:var(--amber);}
   .rank-name{font-weight:600; font-size:14.5px;}
@@ -168,6 +169,20 @@
 <div class="errorbox" id="errorBox"></div>
 
 <div class="kpis" id="kpiRow"></div>
+
+<section id="secTopMes">
+  <div class="grid-2">
+    <div class="panel">
+      <div class="sec-head" style="margin-bottom:18px;"><div><h2 id="tituloMetaMes">Falta pra bater a meta do mês</h2></div></div>
+      <div class="bigstat" id="metaMesConteudo" style="padding:10px 10px 6px;"></div>
+      <div class="rank-bar-wrap" style="margin-top:4px;"><div class="rank-bar" id="metaMesBarra" style="width:0%"></div></div>
+    </div>
+    <div class="panel">
+      <div class="sec-head" style="margin-bottom:18px;"><div><h2 id="tituloTopMes">🏆 Top vendedores do mês</h2></div></div>
+      <div class="ranking" id="topMesBox"></div>
+    </div>
+  </div>
+</section>
 
 <section id="secMetaEvol">
   <div class="sec-head">
@@ -425,6 +440,48 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
       <div class="delta ${k.neutral?'':(k.up?'up':'down')}">${k.neutral?'<span style="color:var(--muted)">'+k.delta+'</span>':k.delta}</div>`;
     kpiRow.appendChild(div);
   });
+
+  // ---- Ranking do mês atual (competição — todo mundo vê) ----
+  const idxMes = N - 1;
+  const nomeMesAtual = idxMes>=0 ? (MONTHS_UPPER[idxMes].charAt(0)+MONTHS_UPPER[idxMes].slice(1).toLowerCase()) : '';
+  document.getElementById('tituloTopMes').textContent = `🏆 Top vendedores de ${nomeMesAtual}`;
+
+  if(idxMes>=0){
+    const rankMes = Object.entries(consultores).map(([name,c])=>({
+      name, valor: c.real[idxMes]||0, color:c.color
+    })).sort((a,b)=>b.valor-a.valor);
+    const medalhas = ['🥇','🥈','🥉'];
+    const maxValorMes = rankMes.length ? rankMes[0].valor : 1;
+    const topMesBox = document.getElementById('topMesBox'); topMesBox.innerHTML='';
+    rankMes.slice(0,3).forEach((r,i)=>{
+      const souEu = r.name === meuNome;
+      const row = document.createElement('div');
+      row.className = 'rank-row' + (i===0?' first':'') + (souEu?' me':'');
+      row.innerHTML = `<div class="medal">${medalhas[i]||''}</div><div class="rank-name">${r.name}${souEu?' (você)':''}</div>
+        <div class="rank-meta"><div class="v">${brl(r.valor)}</div></div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${maxValorMes? (r.valor/maxValorMes*100):0}%; background:linear-gradient(90deg, ${r.color}55, ${r.color})"></div></div>`;
+      topMesBox.appendChild(row);
+    });
+  }
+
+  // ---- Falta pra bater a meta do mês (pessoal, todo mundo vê a sua própria) ----
+  document.getElementById('tituloMetaMes').textContent = `Meta de ${nomeMesAtual}`;
+  const meuMesConteudo = document.getElementById('metaMesConteudo');
+  const meuMesBarra = document.getElementById('metaMesBarra');
+  if(idxMes>=0 && consultores[meuNome]){
+    const metaMes = consultores[meuNome].meta[idxMes] || 0;
+    const realMes = consultores[meuNome].real[idxMes] || 0;
+    const faltaMes = metaMes - realMes;
+    const pctMes = metaMes ? (realMes/metaMes*100) : 0;
+    if(faltaMes <= 0){
+      meuMesConteudo.innerHTML = `<div class="v" style="color:var(--green)">Meta batida! 🎉</div><div class="l">${brl(realMes)} de ${brl(metaMes)} — ${pct(pctMes)}</div>`;
+    } else {
+      meuMesConteudo.innerHTML = `<div class="v">${brl(faltaMes)}</div><div class="l">faltam pra bater a meta de ${brl(metaMes)} (você já vendeu ${brl(realMes)} — ${pct(pctMes)})</div>`;
+    }
+    meuMesBarra.style.width = Math.min(pctMes,100)+'%';
+  } else {
+    meuMesConteudo.innerHTML = `<div class="l">Sem dados do mês ainda.</div>`;
+  }
 
   // ---- Meta x Realizado e Evolução (loja) — só admin ----
   if(isAdmin){
