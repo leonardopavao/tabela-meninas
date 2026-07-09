@@ -158,6 +158,35 @@
   .modal-actions .right{display:flex; gap:10px;}
   .form-msg{font-size:12.5px; color:var(--red); min-height:16px; margin-top:8px;}
   @media(max-width:560px){ .form-grid{grid-template-columns:1fr;} .funil-stats{grid-template-columns:1fr;} }
+
+  /* ===== HUB (tela de escolha) ===== */
+  .hub-screen{min-height:60vh; display:flex; align-items:center; justify-content:center; padding:40px 0;}
+  .hub-buttons{display:grid; grid-template-columns:1fr 1fr; gap:22px; width:100%; max-width:720px;}
+  .hub-btn{
+    background:var(--card); border:1px solid var(--card-line); border-radius:18px;
+    padding:38px 28px; text-align:left; cursor:pointer; font-family:'Inter',sans-serif;
+    display:flex; flex-direction:column; gap:10px; transition:all .15s;
+  }
+  .hub-btn:hover{border-color:var(--amber); transform:translateY(-2px);}
+  .hub-btn-icon{font-size:32px;}
+  .hub-btn-title{font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:var(--cream);}
+  .hub-btn-sub{font-size:13px; color:var(--muted); line-height:1.5;}
+  .btn-voltar{
+    background:none; border:none; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    margin-bottom:24px; padding:6px 0; font-family:'Inter',sans-serif;
+  }
+  .btn-voltar:hover{color:var(--amber);}
+  @media(max-width:640px){ .hub-buttons{grid-template-columns:1fr;} }
+
+  /* ===== FILTROS DO FUNIL ===== */
+  .funil-filtros{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .funil-filtro{
+    background:var(--bg-soft); border:1px solid var(--card-line); border-radius:8px; color:var(--cream);
+    padding:8px 12px; font-size:12.5px; font-family:'Inter',sans-serif; cursor:pointer;
+  }
+  .funil-filtro:focus{outline:none; border-color:var(--amber);}
+  .funil-filtro-check{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); cursor:pointer;}
+  .funil-filtro-check input{width:14px; height:14px; accent-color:var(--amber);}
 </style>
 </head>
 <body>
@@ -211,6 +240,26 @@
   </div>
 </header>
 
+<!-- ==================== HUB (escolha de tela) ==================== -->
+<div id="viewHub" class="hub-screen">
+  <div class="hub-buttons">
+    <button class="hub-btn" id="btnIrPainel" type="button">
+      <span class="hub-btn-icon">📊</span>
+      <span class="hub-btn-title">Painel de Vendas</span>
+      <span class="hub-btn-sub">Metas, gráficos, ranking e comissão do mês</span>
+    </button>
+    <button class="hub-btn" id="btnIrFunil" type="button">
+      <span class="hub-btn-icon">🎯</span>
+      <span class="hub-btn-title">Funil de Vendas</span>
+      <span class="hub-btn-sub">Clientes em atendimento e possível fechamento</span>
+    </button>
+  </div>
+</div>
+
+<!-- ==================== PAINEL ==================== -->
+<div id="viewPainel" style="display:none;">
+<button class="btn-voltar" id="btnVoltarPainel" type="button">← Voltar</button>
+
 <div class="errorbox" id="errorBox"></div>
 
 <div class="kpis" id="kpiRow"></div>
@@ -253,7 +302,7 @@
       <div class="ranking" id="rankingBox"></div>
     </div>
     <div class="panel" id="painelComissao">
-      <div class="sec-head" style="margin-bottom:16px;"><div><h2 id="tituloComissao">Comissões pagas — acumulado</h2></div></div>
+      <div class="sec-head" style="margin-bottom:16px;"><div><h2 id="tituloComissao">Comissão do mês</h2></div></div>
       <div id="comissaoConteudo"><canvas id="chartComissao" style="max-height:280px;"></canvas></div>
     </div>
   </div>
@@ -268,6 +317,12 @@
   </div>
 </section>
 
+</div><!-- /#viewPainel -->
+
+<!-- ==================== FUNIL ==================== -->
+<div id="viewFunil" style="display:none;">
+<button class="btn-voltar" id="btnVoltarFunil" type="button">← Voltar</button>
+
 <section id="secFunil">
   <div class="sec-head">
     <div><h2>Funil de Vendas</h2><p id="funilSub">Clientes em atendimento. Marque "possível venda" pra entrar no cálculo de possível fechamento do mês.</p></div>
@@ -275,7 +330,11 @@
   <div class="funil-tabs" id="funilTabs" style="display:none;"></div>
   <div class="funil-stats" id="funilStats"></div>
   <div class="funil-toolbar">
-    <span style="font-size:12.5px; color:var(--muted);" id="funilContagem"></span>
+    <div class="funil-filtros">
+      <span style="font-size:12.5px; color:var(--muted);" id="funilContagem"></span>
+      <select class="funil-filtro" id="funilFiltroStatus"><option value="TODOS">Todos os status</option></select>
+      <label class="funil-filtro-check"><input type="checkbox" id="funilSoPossivel"> Só possíveis vendas</label>
+    </div>
     <button class="btn-primary" id="btnNovoCliente" type="button">+ Novo cliente</button>
   </div>
   <div class="panel" style="padding:0; overflow-x:auto;">
@@ -286,6 +345,8 @@
         <th>Orçamento</th>
         <th style="text-align:left;">Status</th>
         <th style="text-align:left;">Etapa</th>
+        <th style="text-align:left;">Último contato</th>
+        <th style="text-align:left;">Novo contato</th>
         <th>Poss. venda</th>
       </tr></thead>
       <tbody></tbody>
@@ -293,6 +354,8 @@
     <div class="funil-empty" id="funilEmpty" style="display:none;">Nenhum cliente cadastrado ainda.</div>
   </div>
 </section>
+
+</div><!-- /#viewFunil -->
 
 <footer>
   <span>Arq Luz Iluminação — Votuporanga/SP</span>
@@ -386,6 +449,10 @@ let charts = {};
 let funilConsultorAtivo = null;
 let funilCache = {};
 let funilEditandoId = null;
+let painelCarregado = false;
+let funilIniciado = false;
+let funilFiltroStatus = 'TODOS';
+let funilSoPossivel = false;
 
 document.getElementById('loginForm').addEventListener('submit', (e)=>{
   e.preventDefault();
@@ -405,6 +472,9 @@ document.getElementById('loginForm').addEventListener('submit', (e)=>{
 
 document.getElementById('btnLogout').addEventListener('click', ()=>{
   usuarioAtual = null;
+  painelCarregado = false;
+  funilIniciado = false;
+  funilCache = {};
   sessionStorage.removeItem('arqluz_role');
   sessionStorage.removeItem('arqluz_nome');
   document.getElementById('app').style.display = 'none';
@@ -418,9 +488,33 @@ function entrarNoApp(perfil){
   document.getElementById('userNome').textContent = perfil.nome;
   document.getElementById('userRole').textContent = perfil.role === 'admin' ? 'admin' : 'vendedora';
   aplicarVisibilidadePorPapel(perfil);
-  carregarDados();
-  iniciarFunil();
+  mostrarHub();
 }
+
+/* ======================================================
+   NAVEGAÇÃO ENTRE TELAS (Hub / Painel / Funil)
+   ====================================================== */
+function mostrarHub(){
+  document.getElementById('viewHub').style.display = 'flex';
+  document.getElementById('viewPainel').style.display = 'none';
+  document.getElementById('viewFunil').style.display = 'none';
+}
+function mostrarPainel(){
+  document.getElementById('viewHub').style.display = 'none';
+  document.getElementById('viewPainel').style.display = 'block';
+  document.getElementById('viewFunil').style.display = 'none';
+  if(!painelCarregado){ painelCarregado = true; carregarDados(); }
+}
+function mostrarFunilTela(){
+  document.getElementById('viewHub').style.display = 'none';
+  document.getElementById('viewPainel').style.display = 'none';
+  document.getElementById('viewFunil').style.display = 'block';
+  if(!funilIniciado){ funilIniciado = true; iniciarFunil(); }
+}
+document.getElementById('btnIrPainel').addEventListener('click', mostrarPainel);
+document.getElementById('btnIrFunil').addEventListener('click', mostrarFunilTela);
+document.getElementById('btnVoltarPainel').addEventListener('click', mostrarHub);
+document.getElementById('btnVoltarFunil').addEventListener('click', mostrarHub);
 
 // mantém logado se já autenticou nesta aba (sessionStorage some ao fechar o navegador)
 (function tentarSessaoExistente(){
@@ -438,7 +532,7 @@ function aplicarVisibilidadePorPapel(perfil){
     document.getElementById('tituloConsultores').textContent = 'Desempenho por consultor';
     document.getElementById('subConsultores').textContent = 'Valor real vendido (já descontadas devoluções) por mês, lado a lado.';
     document.getElementById('tituloRanking').textContent = 'Ranking acumulado';
-    document.getElementById('tituloComissao').textContent = 'Comissões pagas — acumulado';
+    document.getElementById('tituloComissao').textContent = 'Comissão do mês — equipe';
     document.getElementById('painelRanking').style.display = '';
     document.getElementById('secMetaEvol').style.display = '';
     document.getElementById('secEvolucaoLoja').style.display = '';
@@ -446,7 +540,7 @@ function aplicarVisibilidadePorPapel(perfil){
     document.getElementById('pageSub').textContent = `Seus números, ${perfil.nome}.`;
     document.getElementById('tituloConsultores').textContent = 'Seu desempenho mensal';
     document.getElementById('subConsultores').textContent = 'Sua meta e seu valor real vendido por mês (já descontadas devoluções).';
-    document.getElementById('tituloComissao').textContent = 'Sua comissão acumulada';
+    document.getElementById('tituloComissao').textContent = 'Sua comissão do mês';
     document.getElementById('painelRanking').style.display = 'none'; // não expõe números dos colegas
     document.getElementById('secMetaEvol').style.display = 'none';   // não expõe faturamento da loja
     document.getElementById('secEvolucaoLoja').style.display = 'none'; // não expõe faturamento da loja
@@ -580,7 +674,7 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     // ---- KPIs da loja inteira ----
     const totalRealYTD = MONTHS.slice(0,N).reduce((s,_,i)=> s + Object.values(consultores).reduce((a,c)=>a+(c.real[i]||0),0), 0);
     const totalMetaYTD = metaLoja.slice(0,N).reduce((a,b)=>a+b,0);
-    const totalComissaoYTD = Object.values(consultores).reduce((s,c)=>s+c.comissao.slice(0,N).reduce((a,b)=>a+b,0),0);
+    const totalComissaoMes = N>0 ? Object.values(consultores).reduce((s,c)=>s+(c.comissao[N-1]||0),0) : 0;
     const pctAtingidoYTD = totalMetaYTD ? (totalRealYTD/totalMetaYTD)*100 : 0;
     const evolTotal2025 = evolucao2025.slice(0,N).reduce((a,b)=>a+(b||0),0);
     const evolTotal2026 = evolucao2026.slice(0,N).reduce((a,b)=>a+(b||0),0);
@@ -589,7 +683,7 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     kpiData = [
       {lbl:'Faturado da loja (acum.)', val: brl(totalRealYTD), delta: (pctAtingidoYTD>=100?'▲ ':'▼ ')+`${pct(Math.abs(pctAtingidoYTD-100))} ${pctAtingidoYTD>=100?'acima':'abaixo'} da meta`, up:pctAtingidoYTD>=100},
       {lbl:'Meta da loja (acum.)', val: brl(totalMetaYTD), delta:`Atingimento: ${pct(pctAtingidoYTD)}`, neutral:true},
-      {lbl:'Comissões pagas (equipe)', val: brl2(totalComissaoYTD), delta:'', neutral:true},
+      {lbl:'Comissão da equipe (mês)', val: brl2(totalComissaoMes), delta:'', neutral:true},
       {lbl:'Evolução vs 2025', val: pct(evolPct), delta: (evolPct>=0?'+':'')+brl(evolTotal2026-evolTotal2025)+' sobre 2025', up:evolPct>=0}
     ];
   } else {
@@ -597,7 +691,7 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     const meu = consultores[meuNome] || {meta:[], real:[], comissao:[]};
     const meuRealYTD = meu.real.slice(0,N).reduce((a,b)=>a+b,0);
     const meuMetaYTD = meu.meta.slice(0,N).reduce((a,b)=>a+b,0);
-    const meuComissaoYTD = meu.comissao.slice(0,N).reduce((a,b)=>a+b,0);
+    const meuComissaoMes = N>0 ? (meu.comissao[N-1]||0) : 0;
     const diff = meuRealYTD - meuMetaYTD;
     const pctMinha = meuMetaYTD ? (meuRealYTD/meuMetaYTD)*100 : 0;
 
@@ -605,7 +699,7 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
       {lbl:'Você vendeu (acum.)', val: brl(meuRealYTD), delta:`${pct(pctMinha)} da sua meta`, neutral:true},
       {lbl:'Sua meta (acum.)', val: brl(meuMetaYTD), delta:'', neutral:true},
       {lbl: diff>=0 ? 'Você ultrapassou a meta em' : 'Falta pra bater a meta', val: brl(Math.abs(diff)), delta: diff>=0 ? '▲ acima da meta' : '▼ abaixo da meta', up: diff>=0},
-      {lbl:'Sua comissão (acum.)', val: brl2(meuComissaoYTD), delta:'', neutral:true}
+      {lbl:'Sua comissão (mês)', val: brl2(meuComissaoMes), delta:'', neutral:true}
     ];
   }
   const kpiRow = document.getElementById('kpiRow'); kpiRow.innerHTML='';
@@ -720,19 +814,19 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     });
   }
 
-  // ---- Comissão: admin vê donut comparativo, vendedora vê só o próprio total em destaque ----
+  // ---- Comissão do mês: admin vê donut comparativo, vendedora vê só o próprio total em destaque ----
   const comissaoConteudo = document.getElementById('comissaoConteudo');
   if(isAdmin){
     comissaoConteudo.innerHTML = '<canvas id="chartComissao" style="max-height:280px;"></canvas>';
-    const comissaoTotais = Object.values(consultores).map(c=>c.comissao.slice(0,N).reduce((a,b)=>a+b,0));
+    const comissaoMesTotais = Object.values(consultores).map(c=> N>0 ? (c.comissao[N-1]||0) : 0);
     charts.comissao = new Chart(document.getElementById('chartComissao'), {
       type:'doughnut',
-      data:{ labels:Object.keys(consultores), datasets:[{data:comissaoTotais, backgroundColor:Object.values(consultores).map(c=>c.color), borderColor:'#201C16', borderWidth:3}] },
+      data:{ labels:Object.keys(consultores), datasets:[{data:comissaoMesTotais, backgroundColor:Object.values(consultores).map(c=>c.color), borderColor:'#201C16', borderWidth:3}] },
       options:{ responsive:true, cutout:'62%', plugins:{ legend:{position:'bottom', labels:{color:'#96897A', padding:16}}, tooltip:{callbacks:{label:(c)=>c.label+': '+brl2(c.raw)}} } }
     });
   } else {
-    const minhaComissao = (consultores[meuNome]?.comissao||[]).slice(0,N).reduce((a,b)=>a+b,0);
-    comissaoConteudo.innerHTML = `<div class="bigstat"><div class="v">${brl2(minhaComissao)}</div><div class="l">acumulado no ano</div></div>`;
+    const minhaComissaoMes = N>0 ? ((consultores[meuNome]?.comissao||[])[N-1]||0) : 0;
+    comissaoConteudo.innerHTML = `<div class="bigstat"><div class="v">${brl2(minhaComissaoMes)}</div><div class="l">referente a este mês</div></div>`;
   }
 
   // ---- Tabela evolução (loja) — só admin ----
@@ -774,7 +868,14 @@ function renderFunilTabs(){
     btn.type = 'button';
     btn.className = 'funil-tab' + (nome===funilConsultorAtivo?' active':'');
     btn.textContent = nome;
-    btn.onclick = ()=>{ funilConsultorAtivo = nome; renderFunilTabs(); carregarFunilAtivo(); };
+    btn.onclick = ()=>{
+      funilConsultorAtivo = nome;
+      funilFiltroStatus = 'TODOS';
+      funilSoPossivel = false;
+      document.getElementById('funilSoPossivel').checked = false;
+      renderFunilTabs();
+      carregarFunilAtivo();
+    };
     tabsBox.appendChild(btn);
   });
 }
@@ -802,12 +903,38 @@ async function carregarFunil(consultor){
   }
 }
 
+function formatarDataBR(iso){
+  if(!iso) return '—';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return iso; // já é texto livre (ex: novoContato às vezes não é data)
+}
+
+function popularFiltroStatus(lista){
+  const sel = document.getElementById('funilFiltroStatus');
+  const statusUnicos = [...new Set(lista.map(i=>(i.status||'').trim()).filter(Boolean))].sort();
+  const manter = statusUnicos.includes(funilFiltroStatus) ? funilFiltroStatus : 'TODOS';
+  sel.innerHTML = '<option value="TODOS">Todos os status</option>' + statusUnicos.map(s=>`<option value="${s}">${s}</option>`).join('');
+  sel.value = manter;
+  funilFiltroStatus = manter;
+}
+
 function renderFunil(){
-  const lista = funilCache[funilConsultorAtivo] || [];
+  const listaCompleta = funilCache[funilConsultorAtivo] || [];
+  popularFiltroStatus(listaCompleta);
+
+  let lista = listaCompleta;
+  if(funilFiltroStatus !== 'TODOS') lista = lista.filter(i=>(i.status||'').trim() === funilFiltroStatus);
+  if(funilSoPossivel) lista = lista.filter(i=>i.possivelVenda);
+
   const tbody = document.querySelector('#funilTable tbody'); tbody.innerHTML='';
   document.getElementById('funilEmpty').style.display = lista.length ? 'none' : 'block';
-  document.getElementById('funilEmpty').textContent = 'Nenhum cliente cadastrado ainda.';
-  document.getElementById('funilContagem').textContent = `${lista.length} cliente(s) no funil de ${funilConsultorAtivo}`;
+  document.getElementById('funilEmpty').textContent = listaCompleta.length ? 'Nenhum cliente bate com esse filtro.' : 'Nenhum cliente cadastrado ainda.';
+
+  const filtroAtivo = funilFiltroStatus !== 'TODOS' || funilSoPossivel;
+  document.getElementById('funilContagem').textContent = filtroAtivo
+    ? `${lista.length} de ${listaCompleta.length} cliente(s) no funil de ${funilConsultorAtivo}`
+    : `${listaCompleta.length} cliente(s) no funil de ${funilConsultorAtivo}`;
 
   lista.forEach(item=>{
     const tr = document.createElement('tr');
@@ -816,14 +943,17 @@ function renderFunil(){
       <td>${brl(item.orcamento)}</td>
       <td style="text-align:left;">${item.status||'—'}</td>
       <td style="text-align:left;">${item.etapa||'—'}</td>
+      <td style="text-align:left;">${formatarDataBR(item.ultimoContato)}</td>
+      <td style="text-align:left;">${formatarDataBR(item.novoContato)}</td>
       <td><span class="badge-venda ${item.possivelVenda?'sim':'nao'}">${item.possivelVenda?'Sim':'Não'}</span></td>`;
     tr.addEventListener('click', ()=> abrirModal(item));
     tbody.appendChild(tr);
   });
 
-  const totalPossivel = lista.filter(i=>i.possivelVenda).reduce((s,i)=>s+(Number(i.orcamento)||0),0);
-  const totalFunil = lista.reduce((s,i)=>s+(Number(i.orcamento)||0),0);
-  const qtdPossivel = lista.filter(i=>i.possivelVenda).length;
+  // stats sempre calculadas sobre o funil INTEIRO (não sobre o filtro), pra não confundir o total
+  const totalPossivel = listaCompleta.filter(i=>i.possivelVenda).reduce((s,i)=>s+(Number(i.orcamento)||0),0);
+  const totalFunil = listaCompleta.reduce((s,i)=>s+(Number(i.orcamento)||0),0);
+  const qtdPossivel = listaCompleta.filter(i=>i.possivelVenda).length;
   const statsBox = document.getElementById('funilStats'); statsBox.innerHTML='';
   [
     {lbl:'Possível fechamento este mês', val: brl(totalPossivel)},
@@ -836,11 +966,20 @@ function renderFunil(){
   });
 
   // datalists de arquitetos/eletricistas já usados, pra facilitar digitação
-  const arquitetos = [...new Set(lista.map(i=>i.arquiteto).filter(Boolean))];
-  const eletricistas = [...new Set(lista.map(i=>i.eletricista).filter(Boolean))];
+  const arquitetos = [...new Set(listaCompleta.map(i=>i.arquiteto).filter(Boolean))];
+  const eletricistas = [...new Set(listaCompleta.map(i=>i.eletricista).filter(Boolean))];
   document.getElementById('listaArquitetos').innerHTML = arquitetos.map(a=>`<option value="${a}">`).join('');
   document.getElementById('listaEletricistas').innerHTML = eletricistas.map(el=>`<option value="${el}">`).join('');
 }
+
+document.getElementById('funilFiltroStatus').addEventListener('change', (e)=>{
+  funilFiltroStatus = e.target.value;
+  renderFunil();
+});
+document.getElementById('funilSoPossivel').addEventListener('change', (e)=>{
+  funilSoPossivel = e.target.checked;
+  renderFunil();
+});
 
 function abrirModal(item){
   funilEditandoId = item ? item.id : null;
@@ -944,8 +1083,8 @@ document.getElementById('btnExcluirCliente').addEventListener('click', async ()=
   }
 });
 
-setInterval(()=>{ if(usuarioAtual) carregarDados(); }, 5*60*1000);
-setInterval(()=>{ if(usuarioAtual) { delete funilCache[funilConsultorAtivo]; carregarFunilAtivo(); } }, 5*60*1000);
+setInterval(()=>{ if(usuarioAtual && painelCarregado) carregarDados(); }, 5*60*1000);
+setInterval(()=>{ if(usuarioAtual && funilIniciado) { delete funilCache[funilConsultorAtivo]; carregarFunilAtivo(); } }, 5*60*1000);
 </script>
 </body>
 </html>
