@@ -9,15 +9,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#14120E; --bg-soft:#1B1813; --card:#201C16; --card-line:#322C22;
-    --amber:#E8A94A; --amber-dim:#7A5A2A; --copper:#C97B4A; --cream:#F3ECDD;
-    --muted:#96897A; --green:#7FBF7F; --green-dim:#2C3626; --red:#D9694F; --red-dim:#3A2620;
+    /* Tema claro — mesma paleta âmbar/cobre da marca, agora sobre fundo claro.
+       (os nomes das variáveis ficaram os mesmos de antes pra não duplicar
+       CSS por aí, só os valores mudaram) */
+    --bg:#FAF7F1; --bg-soft:#F1EBDD; --card:#FFFFFF; --card-line:#E6DDC9;
+    --amber:#B87F1E; --amber-dim:#DDB165; --copper:#A85A32; --cream:#2B2620;
+    --muted:#8A7E6B; --green:#2F8F52; --green-dim:#E3F3E8; --red:#C0432E; --red-dim:#FBEAE6;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
     background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(232,169,74,0.08), transparent),
-      radial-gradient(ellipse 700px 600px at 100% 10%, rgba(201,123,74,0.06), transparent),
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(184,127,30,0.06), transparent),
+      radial-gradient(ellipse 700px 600px at 100% 10%, rgba(168,90,50,0.05), transparent),
       var(--bg);
     color:var(--cream); font-family:'Inter',sans-serif; min-height:100vh;
   }
@@ -30,6 +33,7 @@
   .login-card{
     background:var(--card); border:1px solid var(--card-line); border-radius:16px;
     padding:44px 40px; width:100%; max-width:380px; text-align:center;
+    box-shadow:0 4px 24px rgba(43,38,32,0.06);
   }
   .login-card .bulb{width:56px; height:56px; margin:0 auto 18px;}
   .login-card h1{font-family:'Fraunces',serif; font-size:24px; font-weight:600; margin-bottom:8px;}
@@ -66,7 +70,7 @@
   .logout-btn:hover{color:var(--cream);}
 
   .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:40px;}
-  .kpi{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:22px 22px 20px; position:relative;}
+  .kpi{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:22px 22px 20px; position:relative; box-shadow:0 1px 3px rgba(43,38,32,0.04);}
   .kpi .lbl{font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; font-weight:600;}
   .kpi .val{font-family:'Fraunces',serif; font-size:28px; font-weight:600; line-height:1.1;}
   .kpi .delta{font-size:12.5px; margin-top:10px;}
@@ -77,7 +81,7 @@
   .sec-head h2{font-family:'Fraunces',serif; font-size:21px; font-weight:600;}
   .sec-head p{font-size:13px; color:var(--muted); max-width:520px;}
   .grid-2{display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
-  .panel{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:24px;}
+  .panel{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:24px; box-shadow:0 1px 3px rgba(43,38,32,0.04);}
   .panel canvas{max-height:320px;}
 
   .ranking{display:flex; flex-direction:column; gap:14px;}
@@ -104,7 +108,16 @@
   thead th:first-child, tbody td:first-child{text-align:left;}
   tbody td{padding:12px; text-align:right; border-bottom:1px solid var(--card-line);}
   tbody tr:last-child td{border-bottom:none;}
-  tbody tr:hover{background:rgba(232,169,74,0.04);}
+  tbody tr:hover{background:rgba(184,127,30,0.05);}
+  #funilTable tbody tr.contato-hoje{background:rgba(184,127,30,0.11);}
+  #funilTable tbody tr.contato-hoje:hover{background:rgba(184,127,30,0.17);}
+  #funilTable tbody tr.contato-atrasado{background:rgba(192,67,46,0.09);}
+  #funilTable tbody tr.contato-atrasado:hover{background:rgba(192,67,46,0.15);}
+  .legenda-contato{display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin:10px 0 4px; font-size:12px; color:var(--muted);}
+  .legenda-contato span{display:inline-flex; align-items:center; gap:6px;}
+  .legenda-dot{width:9px; height:9px; border-radius:3px; display:inline-block;}
+  .legenda-dot.hoje{background:var(--amber);}
+  .legenda-dot.atrasado{background:var(--red);}
   .pos{color:var(--green);} .neg{color:var(--red);}
   .tag{display:inline-block; padding:3px 9px; border-radius:100px; font-size:11px; font-weight:600;}
   .tag.pos{background:var(--green-dim); color:var(--green);}
@@ -121,7 +134,7 @@
   .funil-tab{background:var(--bg-soft); border:1px solid var(--card-line); color:var(--muted); padding:9px 18px; border-radius:100px; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; font-family:'Inter',sans-serif;}
   .funil-tab.active{background:var(--amber); border-color:var(--amber); color:#241C10;}
   .funil-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:22px;}
-  .funil-stat{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:20px 22px;}
+  .funil-stat{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:20px 22px; box-shadow:0 1px 3px rgba(43,38,32,0.04);}
   .funil-stat .lbl{font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; font-weight:600;}
   .funil-stat .val{font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:var(--amber);}
   .funil-toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;}
@@ -131,7 +144,22 @@
   .btn-secondary{background:var(--bg-soft); color:var(--cream); border:1px solid var(--card-line); border-radius:8px; padding:11px 20px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
   .btn-secondary:hover{border-color:var(--amber);}
   .btn-danger{background:var(--red-dim); color:var(--red); border:1px solid var(--red); border-radius:8px; padding:11px 20px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
-  #funilTable tbody tr{cursor:pointer;}
+  #funilTable td{padding:6px 10px;}
+  #funilTable thead th{padding:10px 10px;}
+  .cell-input{
+    width:100%; background:transparent; border:1px solid transparent; border-radius:6px;
+    padding:7px 8px; color:var(--cream); font-size:13px; font-family:'Inter',sans-serif;
+  }
+  .cell-input:hover{border-color:var(--card-line); background:var(--bg-soft);}
+  .cell-input:focus{outline:none; border-color:var(--amber); background:var(--bg-soft);}
+  input.cell-input[type="number"]{text-align:right;}
+  .cell-check{width:16px; height:16px; accent-color:var(--amber); cursor:pointer;}
+  .btn-mais{
+    background:none; border:1px solid var(--card-line); border-radius:8px; color:var(--muted);
+    width:28px; height:28px; cursor:pointer; font-size:14px; line-height:1; font-family:'Inter',sans-serif;
+  }
+  .btn-mais:hover{border-color:var(--amber); color:var(--amber);}
+  .cell-salvando{opacity:0.5;}
   .badge-venda{display:inline-block; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:700;}
   .badge-venda.sim{background:var(--green-dim); color:var(--green);}
   .badge-venda.nao{background:var(--card-line); color:var(--muted);}
@@ -166,8 +194,9 @@
     background:var(--card); border:1px solid var(--card-line); border-radius:18px;
     padding:38px 28px; text-align:left; cursor:pointer; font-family:'Inter',sans-serif;
     display:flex; flex-direction:column; gap:10px; transition:all .15s;
+    box-shadow:0 2px 10px rgba(43,38,32,0.05);
   }
-  .hub-btn:hover{border-color:var(--amber); transform:translateY(-2px);}
+  .hub-btn:hover{border-color:var(--amber); transform:translateY(-2px); box-shadow:0 6px 18px rgba(43,38,32,0.08);}
   .hub-btn-icon{font-size:32px;}
   .hub-btn-title{font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:var(--cream);}
   .hub-btn-sub{font-size:13px; color:var(--muted); line-height:1.5;}
@@ -337,6 +366,11 @@
     </div>
     <button class="btn-primary" id="btnNovoCliente" type="button">+ Novo cliente</button>
   </div>
+  <div class="legenda-contato">
+    <span><span class="legenda-dot hoje"></span> Contato marcado pra hoje</span>
+    <span><span class="legenda-dot atrasado"></span> Contato atrasado (passou da data e não foi atualizado)</span>
+    <span style="color:var(--muted);">Edite qualquer campo direto na linha — salva sozinho ao sair do campo.</span>
+  </div>
   <div class="panel" style="padding:0; overflow-x:auto;">
     <table id="funilTable">
       <thead><tr>
@@ -348,6 +382,7 @@
         <th style="text-align:left;">Último contato</th>
         <th style="text-align:left;">Novo contato</th>
         <th>Poss. venda</th>
+        <th></th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -554,7 +589,7 @@ function desenharLampada(pct){
   const topoBulbo = 26, baseBulbo = 130, alturaBulbo = baseBulbo - topoBulbo;
   const alturaLuz = alturaBulbo * p;
   const yLuz = baseBulbo - alturaLuz;
-  const corLuz = bateu ? '#8FE0A0' : '#E8A94A';
+  const corLuz = bateu ? 'var(--green)' : 'var(--amber)';
   const corLuzClara = bateu ? '#D9FBE0' : '#FFE4A8';
   const glowOpacity = 0.15 + p*0.55;
 
@@ -583,14 +618,14 @@ function desenharLampada(pct){
 
     <circle cx="70" cy="78" r="52" fill="none" stroke="var(--card-line)" stroke-width="2.5"/>
 
-    <path d="M70 40 L70 78 M55 62 L70 78 L85 62" stroke="${p>0.4?'#5A4526':'var(--card-line)'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${p>0.05?0.85:0.5}"/>
+    <path d="M70 40 L70 78 M55 62 L70 78 L85 62" stroke="${p>0.4?'var(--cream)':'var(--card-line)'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${p>0.05?0.85:0.5}"/>
 
     <rect x="55" y="128" width="30" height="22" rx="3" fill="#3A342A" stroke="var(--card-line)" stroke-width="1.5"/>
     <rect x="57" y="134" width="26" height="3" fill="#242018"/>
     <rect x="57" y="140" width="26" height="3" fill="#242018"/>
     <rect x="58" y="150" width="24" height="10" rx="2" fill="#242018"/>
 
-    <text x="70" y="200" text-anchor="middle" font-family="Fraunces, serif" font-weight="600" font-size="22" fill="${bateu?'#8FE0A0':'var(--cream)'}">${Math.round(pct)}%</text>
+    <text x="70" y="200" text-anchor="middle" font-family="Fraunces, serif" font-weight="600" font-size="22" fill="${bateu?'var(--green)':'var(--cream)'}">${Math.round(pct)}%</text>
   </svg>`;
 }
 function brl2(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
@@ -764,8 +799,8 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
         {label:'Meta', data:metaLoja, backgroundColor:'rgba(232,169,74,0.14)', borderRadius:6, borderSkipped:false},
         {label:'Realizado', data:realLoja, backgroundColor:'#E8A94A', borderRadius:6, borderSkipped:false}
       ]},
-      options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
-        scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+      options:{ responsive:true, plugins:{ legend:{labels:{color:'#8A7E6B'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+        scales:{ x:{ticks:{color:'#8A7E6B'}, grid:{color:'#EFE7D6'}}, y:{ticks:{color:'#8A7E6B', callback:v=>brl(v)}, grid:{color:'#EFE7D6'}} } }
     });
 
     charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
@@ -774,8 +809,8 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
         {label:'2025', data:evolucao2025, borderColor:'#7A6A55', backgroundColor:'transparent', tension:0.35, borderDash:[4,3], pointRadius:3},
         {label:'2026', data:evolucao2026, borderColor:'#E8A94A', backgroundColor:'rgba(232,169,74,0.12)', tension:0.35, fill:true, pointRadius:3}
       ]},
-      options:{ responsive:true, plugins:{ legend:{labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
-        scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+      options:{ responsive:true, plugins:{ legend:{labels:{color:'#8A7E6B'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+(c.raw!=null?brl(c.raw):'—')}} },
+        scales:{ x:{ticks:{color:'#8A7E6B'}, grid:{color:'#EFE7D6'}}, y:{ticks:{color:'#8A7E6B', callback:v=>brl(v)}, grid:{color:'#EFE7D6'}} } }
     });
   }
 
@@ -792,8 +827,8 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
   charts.consultores = new Chart(document.getElementById('chartConsultores'), {
     type:'bar',
     data:{ labels:MONTHS.slice(0,N), datasets:datasetsConsultor },
-    options:{ responsive:true, plugins:{ legend:{ display:true, labels:{color:'#96897A'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+brl(c.raw)}} },
-      scales:{ x:{ticks:{color:'#96897A'}, grid:{color:'#241F18'}}, y:{ticks:{color:'#96897A', callback:v=>brl(v)}, grid:{color:'#241F18'}} } }
+    options:{ responsive:true, plugins:{ legend:{ display:true, labels:{color:'#8A7E6B'}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+brl(c.raw)}} },
+      scales:{ x:{ticks:{color:'#8A7E6B'}, grid:{color:'#EFE7D6'}}, y:{ticks:{color:'#8A7E6B', callback:v=>brl(v)}, grid:{color:'#EFE7D6'}} } }
   });
 
   // ---- Ranking: só admin ----
@@ -821,8 +856,8 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
     const comissaoMesTotais = Object.values(consultores).map(c=> N>0 ? (c.comissao[N-1]||0) : 0);
     charts.comissao = new Chart(document.getElementById('chartComissao'), {
       type:'doughnut',
-      data:{ labels:Object.keys(consultores), datasets:[{data:comissaoMesTotais, backgroundColor:Object.values(consultores).map(c=>c.color), borderColor:'#201C16', borderWidth:3}] },
-      options:{ responsive:true, cutout:'62%', plugins:{ legend:{position:'bottom', labels:{color:'#96897A', padding:16}}, tooltip:{callbacks:{label:(c)=>c.label+': '+brl2(c.raw)}} } }
+      data:{ labels:Object.keys(consultores), datasets:[{data:comissaoMesTotais, backgroundColor:Object.values(consultores).map(c=>c.color), borderColor:'#FFFFFF', borderWidth:3}] },
+      options:{ responsive:true, cutout:'62%', plugins:{ legend:{position:'bottom', labels:{color:'#8A7E6B', padding:16}}, tooltip:{callbacks:{label:(c)=>c.label+': '+brl2(c.raw)}} } }
     });
   } else {
     const minhaComissaoMes = N>0 ? ((consultores[meuNome]?.comissao||[])[N-1]||0) : 0;
@@ -837,7 +872,7 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
       if(v25==null && v26==null) return;
       const tr = document.createElement('tr');
       if(v26==null){
-        tr.innerHTML = `<td>${m}</td><td>${v25!=null?brl(v25):'—'}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td><span class="tag" style="background:#241F18; color:var(--muted)">futuro</span></td>`;
+        tr.innerHTML = `<td>${m}</td><td>${v25!=null?brl(v25):'—'}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td><span class="tag" style="background:var(--bg-soft); color:var(--muted)">futuro</span></td>`;
       } else {
         const diff = v26-(v25||0); const p = v25 ? (diff/v25)*100 : 0; const cls = diff>=0?'pos':'neg';
         tr.innerHTML = `<td>${m}</td><td>${brl(v25||0)}</td><td>${brl(v26)}</td><td class="${cls}">${diff>=0?'+':''}${brl(diff)}</td><td><span class="tag ${cls}">${diff>=0?'+':''}${pct(p)}</span></td>`;
@@ -910,6 +945,27 @@ function formatarDataBR(iso){
   return iso; // já é texto livre (ex: novoContato às vezes não é data)
 }
 
+function escapeAttr(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function parseDataFlexivel(str){
+  if(!str) return null;
+  let m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+  m = String(str).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+  return null;
+}
+function statusContato(novoContato){
+  const data = parseDataFlexivel(novoContato);
+  if(!data) return '';
+  const hoje = new Date(); hoje.setHours(0,0,0,0); data.setHours(0,0,0,0);
+  if(data.getTime() === hoje.getTime()) return 'contato-hoje';
+  if(data.getTime() < hoje.getTime()) return 'contato-atrasado';
+  return '';
+}
+
 function popularFiltroStatus(lista){
   const sel = document.getElementById('funilFiltroStatus');
   const statusUnicos = [...new Set(lista.map(i=>(i.status||'').trim()).filter(Boolean))].sort();
@@ -938,15 +994,19 @@ function renderFunil(){
 
   lista.forEach(item=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="text-align:left;">${item.cliente||'—'}</td>
-      <td style="text-align:left;">${item.arquiteto||'—'}</td>
-      <td>${brl(item.orcamento)}</td>
-      <td style="text-align:left;">${item.status||'—'}</td>
-      <td style="text-align:left;">${item.etapa||'—'}</td>
-      <td style="text-align:left;">${formatarDataBR(item.ultimoContato)}</td>
-      <td style="text-align:left;">${formatarDataBR(item.novoContato)}</td>
-      <td><span class="badge-venda ${item.possivelVenda?'sim':'nao'}">${item.possivelVenda?'Sim':'Não'}</span></td>`;
-    tr.addEventListener('click', ()=> abrirModal(item));
+    tr.dataset.id = item.id;
+    const classeContato = statusContato(item.novoContato);
+    if(classeContato) tr.className = classeContato;
+    tr.innerHTML = `
+      <td><input class="cell-input" type="text" data-campo="cliente" value="${escapeAttr(item.cliente)}"></td>
+      <td><input class="cell-input" type="text" data-campo="arquiteto" value="${escapeAttr(item.arquiteto)}" list="listaArquitetos"></td>
+      <td><input class="cell-input" type="number" step="0.01" data-campo="orcamento" value="${item.orcamento||0}"></td>
+      <td><input class="cell-input" type="text" data-campo="status" value="${escapeAttr(item.status)}" list="listaStatus"></td>
+      <td><input class="cell-input" type="text" data-campo="etapa" value="${escapeAttr(item.etapa)}" list="listaEtapas"></td>
+      <td><input class="cell-input" type="date" data-campo="ultimoContato" value="${escapeAttr(item.ultimoContato)}"></td>
+      <td><input class="cell-input" type="text" data-campo="novoContato" value="${escapeAttr(item.novoContato)}" placeholder="dd/mm/aaaa"></td>
+      <td style="text-align:center;"><input class="cell-check" type="checkbox" data-campo="possivelVenda" ${item.possivelVenda?'checked':''}></td>
+      <td style="text-align:center;"><button class="btn-mais" type="button" data-abrir-modal="${item.id}" title="Editar tudo / excluir">⋯</button></td>`;
     tbody.appendChild(tr);
   });
 
@@ -979,6 +1039,58 @@ document.getElementById('funilFiltroStatus').addEventListener('change', (e)=>{
 document.getElementById('funilSoPossivel').addEventListener('change', (e)=>{
   funilSoPossivel = e.target.checked;
   renderFunil();
+});
+
+/* ---- edição inline direto na linha da tabela ---- */
+async function salvarCampoInline(item, campo, valor, el){
+  const valorAnterior = item[campo];
+  item[campo] = valor; // otimista — atualiza a tela antes da resposta do servidor
+  if(el) el.classList.add('cell-salvando');
+
+  const dados = {
+    cliente:item.cliente, codCliente:item.codCliente, arquiteto:item.arquiteto, orcamento:item.orcamento,
+    eletricista:item.eletricista, entradaProjeto:item.entradaProjeto, apresentacaoProjeto:item.apresentacaoProjeto,
+    ultimoContato:item.ultimoContato, novoContato:item.novoContato, visitas:item.visitas,
+    status:item.status, etapa:item.etapa, obs:item.obs, possivelVenda:item.possivelVenda
+  };
+
+  try{
+    const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({
+      token: PIPELINE_TOKEN, consultor: funilConsultorAtivo, acao:'atualizar', id:item.id, dados:dados
+    })});
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.erro || 'falha ao salvar');
+    // campos que afetam totais, filtro ou a cor da linha precisam recalcular a tabela toda
+    if(['orcamento','possivelVenda','status','novoContato'].includes(campo)) renderFunil();
+  } catch(err){
+    item[campo] = valorAnterior;
+    alert('Não consegui salvar essa alteração (' + err.message + '). Tente de novo.');
+    renderFunil();
+  } finally {
+    if(el) el.classList.remove('cell-salvando');
+  }
+}
+
+document.querySelector('#funilTable tbody').addEventListener('change', (e)=>{
+  const el = e.target;
+  const campo = el.dataset.campo;
+  if(!campo) return;
+  const id = el.closest('tr').dataset.id;
+  const item = (funilCache[funilConsultorAtivo]||[]).find(i=>String(i.id)===String(id));
+  if(!item) return;
+  let valor;
+  if(el.type === 'checkbox') valor = el.checked;
+  else if(el.type === 'number') valor = parseFloat(el.value) || 0;
+  else valor = el.value;
+  salvarCampoInline(item, campo, valor, el);
+});
+
+document.querySelector('#funilTable tbody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.btn-mais');
+  if(!btn) return;
+  const id = btn.dataset.abrirModal;
+  const item = (funilCache[funilConsultorAtivo]||[]).find(i=>String(i.id)===String(id));
+  if(item) abrirModal(item);
 });
 
 function abrirModal(item){
