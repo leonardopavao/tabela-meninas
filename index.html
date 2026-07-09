@@ -382,6 +382,10 @@ const USUARIOS = {
    pra proteger dado ultra-sensível nem reaproveite senha de outro lugar. */
 
 let usuarioAtual = null;
+let charts = {};
+let funilConsultorAtivo = null;
+let funilCache = {};
+let funilEditandoId = null;
 
 document.getElementById('loginForm').addEventListener('submit', (e)=>{
   e.preventDefault();
@@ -564,7 +568,6 @@ function montarDashboard(json){
   renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N});
 }
 
-let charts = {};
 function destruirCharts(){ Object.values(charts).forEach(c=>c && c.destroy()); charts = {}; }
 
 function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
@@ -753,10 +756,6 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
 /* ======================================================
    FUNIL DE VENDAS (pipeline das consultoras)
    ====================================================== */
-let funilConsultorAtivo = null;
-let funilCache = {};
-let funilEditandoId = null;
-
 function iniciarFunil(){
   const isAdmin = usuarioAtual.role === 'admin';
   funilConsultorAtivo = isAdmin ? 'LEO' : usuarioAtual.nome;
