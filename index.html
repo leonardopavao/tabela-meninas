@@ -347,6 +347,16 @@
 
 <script>
 /* ======================================================
+   DADOS (precisa vir antes de tudo — usado por funções
+   chamadas de dentro do IIFE de sessão logo abaixo)
+   ====================================================== */
+const MONTHS_UPPER = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const CORES = { LEO:'#E8A94A', LARI:'#C97B4A', GEOVANA:'#8FA9C9' };
+
+function brl(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+/* ======================================================
    CONFIG — cole a URL do seu Apps Script Web App
    ====================================================== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbwjd2lfgvvhwRmxyEFbNm2Q3H2vEAaBbPBTxg-1l7nuUit_0Tp-B3vpzgkabJ9frt-3PQ/exec';
@@ -438,15 +448,6 @@ function aplicarVisibilidadePorPapel(perfil){
     document.getElementById('secEvolucaoLoja').style.display = 'none'; // não expõe faturamento da loja
   }
 }
-
-/* ======================================================
-   DADOS
-   ====================================================== */
-const MONTHS_UPPER = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const CORES = { LEO:'#E8A94A', LARI:'#C97B4A', GEOVANA:'#8FA9C9' };
-
-function brl(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}); }
 
 function desenharLampada(pct){
   const p = Math.max(0, Math.min(pct, 100)) / 100;
