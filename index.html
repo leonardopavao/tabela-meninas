@@ -115,6 +115,49 @@
 
   @media(max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} }
   @media(max-width:560px){ .kpis{grid-template-columns:1fr;} #app{padding:32px 5vw 60px;} }
+
+  /* ===== FUNIL DE VENDAS ===== */
+  .funil-tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .funil-tab{background:var(--bg-soft); border:1px solid var(--card-line); color:var(--muted); padding:9px 18px; border-radius:100px; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; font-family:'Inter',sans-serif;}
+  .funil-tab.active{background:var(--amber); border-color:var(--amber); color:#241C10;}
+  .funil-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:22px;}
+  .funil-stat{background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:20px 22px;}
+  .funil-stat .lbl{font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; font-weight:600;}
+  .funil-stat .val{font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:var(--amber);}
+  .funil-toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;}
+  .btn-primary{background:var(--amber); color:#241C10; border:none; border-radius:8px; padding:11px 20px; font-weight:700; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .btn-primary:hover{background:#f0b862;}
+  .btn-primary:disabled{opacity:0.6; cursor:default;}
+  .btn-secondary{background:var(--bg-soft); color:var(--cream); border:1px solid var(--card-line); border-radius:8px; padding:11px 20px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .btn-secondary:hover{border-color:var(--amber);}
+  .btn-danger{background:var(--red-dim); color:var(--red); border:1px solid var(--red); border-radius:8px; padding:11px 20px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
+  #funilTable tbody tr{cursor:pointer;}
+  .badge-venda{display:inline-block; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:700;}
+  .badge-venda.sim{background:var(--green-dim); color:var(--green);}
+  .badge-venda.nao{background:var(--card-line); color:var(--muted);}
+  .funil-empty{text-align:center; color:var(--muted); padding:40px 0; font-size:13.5px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed; inset:0; background:rgba(10,8,5,0.72); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal-card{background:var(--card); border:1px solid var(--card-line); border-radius:16px; padding:32px; width:100%; max-width:640px; max-height:88vh; overflow-y:auto;}
+  .modal-card h3{font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:22px;}
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .form-grid .full{grid-column:1/-1;}
+  .field label{font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); font-weight:600; display:block; margin-bottom:6px;}
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--bg-soft); border:1px solid var(--card-line); border-radius:8px;
+    padding:10px 12px; color:var(--cream); font-size:13.5px; font-family:'Inter',sans-serif;
+  }
+  .field textarea{resize:vertical; min-height:60px;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--amber);}
+  .field-check{display:flex; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid var(--card-line); border-radius:8px; padding:12px 14px;}
+  .field-check input{width:18px; height:18px; accent-color:var(--amber);}
+  .field-check label{margin:0; text-transform:none; font-size:13.5px; color:var(--cream); letter-spacing:0; font-weight:500;}
+  .modal-actions{display:flex; justify-content:space-between; align-items:center; margin-top:26px; gap:10px; flex-wrap:wrap;}
+  .modal-actions .right{display:flex; gap:10px;}
+  .form-msg{font-size:12.5px; color:var(--red); min-height:16px; margin-top:8px;}
+  @media(max-width:560px){ .form-grid{grid-template-columns:1fr;} .funil-stats{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -225,6 +268,32 @@
   </div>
 </section>
 
+<section id="secFunil">
+  <div class="sec-head">
+    <div><h2>Funil de Vendas</h2><p id="funilSub">Clientes em atendimento. Marque "possível venda" pra entrar no cálculo de possível fechamento do mês.</p></div>
+  </div>
+  <div class="funil-tabs" id="funilTabs" style="display:none;"></div>
+  <div class="funil-stats" id="funilStats"></div>
+  <div class="funil-toolbar">
+    <span style="font-size:12.5px; color:var(--muted);" id="funilContagem"></span>
+    <button class="btn-primary" id="btnNovoCliente" type="button">+ Novo cliente</button>
+  </div>
+  <div class="panel" style="padding:0; overflow-x:auto;">
+    <table id="funilTable">
+      <thead><tr>
+        <th style="text-align:left;">Cliente</th>
+        <th style="text-align:left;">Arquiteto</th>
+        <th>Orçamento</th>
+        <th style="text-align:left;">Status</th>
+        <th style="text-align:left;">Etapa</th>
+        <th>Poss. venda</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="funil-empty" id="funilEmpty" style="display:none;">Nenhum cliente cadastrado ainda.</div>
+  </div>
+</section>
+
 <footer>
   <span>Arq Luz Iluminação — Votuporanga/SP</span>
   <span id="lastUpdated">—</span>
@@ -232,11 +301,61 @@
 
 </div><!-- /#app -->
 
+<!-- ==================== MODAL CLIENTE ==================== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <h3 id="modalTitulo">Novo cliente</h3>
+    <form id="formCliente">
+      <div class="form-grid">
+        <div class="field full"><label>Cliente</label><input type="text" id="fCliente" required></div>
+        <div class="field"><label>Código cliente</label><input type="text" id="fCodCliente"></div>
+        <div class="field"><label>Arquiteto</label><input type="text" id="fArquiteto" list="listaArquitetos"></div>
+        <div class="field"><label>R$ Orçamento</label><input type="number" step="0.01" id="fOrcamento"></div>
+        <div class="field"><label>Eletricista</label><input type="text" id="fEletricista" list="listaEletricistas"></div>
+        <div class="field"><label>Entrada do projeto</label><input type="date" id="fEntradaProjeto"></div>
+        <div class="field"><label>Apresentação do projeto</label><input type="date" id="fApresentacaoProjeto"></div>
+        <div class="field"><label>Último contato</label><input type="date" id="fUltimoContato"></div>
+        <div class="field"><label>Novo contato</label><input type="text" id="fNovoContato" placeholder="dd/mm/aaaa ou observação"></div>
+        <div class="field"><label>Visitas</label><input type="number" id="fVisitas" min="0"></div>
+        <div class="field"><label>Status</label><input type="text" id="fStatus" list="listaStatus"></div>
+        <div class="field"><label>Etapa</label><input type="text" id="fEtapa" list="listaEtapas"></div>
+        <div class="field full"><label>Observações</label><textarea id="fObs"></textarea></div>
+        <div class="field full field-check">
+          <input type="checkbox" id="fPossivelVenda">
+          <label for="fPossivelVenda">É uma possível venda (entra no planejamento do mês)</label>
+        </div>
+      </div>
+      <div class="form-msg" id="formMsg"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-danger" id="btnExcluirCliente" style="display:none;">Excluir</button>
+        <div class="right">
+          <button type="button" class="btn-secondary" id="btnCancelarModal">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarCliente">Salvar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<datalist id="listaStatus">
+  <option value="VENDA FECHADA"><option value="EM NEGOCIAÇÃO"><option value="EM APRESENTAÇÃO"><option value="FINALIZADA">
+</datalist>
+<datalist id="listaEtapas">
+  <option value="ALT. PROJETO"><option value="O. ANDAMENTO">
+</datalist>
+<datalist id="listaArquitetos"></datalist>
+<datalist id="listaEletricistas"></datalist>
+
 <script>
 /* ======================================================
    CONFIG — cole a URL do seu Apps Script Web App
    ====================================================== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbwjd2lfgvvhwRmxyEFbNm2Q3H2vEAaBbPBTxg-1l7nuUit_0Tp-B3vpzgkabJ9frt-3PQ/exec';
+
+/* Token que protege a escrita no funil de vendas (criar/editar/excluir cliente).
+   PRECISA ser IDÊNTICO à constante API_TOKEN no topo do AppsScript_Combinado.gs.
+   Assim como a senha de login, fica visível no código-fonte — troque antes de
+   circular o site, é só uma trava contra acesso casual, não um cofre. */
+const PIPELINE_TOKEN = 'arqluz2026-troque-essa-senha';
 
 /* Senha de cada pessoa + o que ela vê.
    'admin'     -> vê tudo (Leo)
@@ -286,6 +405,7 @@ function entrarNoApp(perfil){
   document.getElementById('userRole').textContent = perfil.role === 'admin' ? 'admin' : 'vendedora';
   aplicarVisibilidadePorPapel(perfil);
   carregarDados();
+  iniciarFunil();
 }
 
 // mantém logado se já autenticou nesta aba (sessionStorage some ao fechar o navegador)
@@ -629,7 +749,203 @@ function renderTudo({consultores, metaLoja, evolucao2025, evolucao2026, N}){
   }
 }
 
+/* ======================================================
+   FUNIL DE VENDAS (pipeline das consultoras)
+   ====================================================== */
+let funilConsultorAtivo = null;
+let funilCache = {};
+let funilEditandoId = null;
+
+function iniciarFunil(){
+  const isAdmin = usuarioAtual.role === 'admin';
+  funilConsultorAtivo = isAdmin ? 'LEO' : usuarioAtual.nome;
+  renderFunilTabs();
+  carregarFunilAtivo();
+}
+
+function renderFunilTabs(){
+  const isAdmin = usuarioAtual.role === 'admin';
+  const tabsBox = document.getElementById('funilTabs');
+  if(!isAdmin){ tabsBox.style.display='none'; return; }
+  tabsBox.style.display='flex';
+  tabsBox.innerHTML='';
+  Object.keys(CORES).forEach(nome=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'funil-tab' + (nome===funilConsultorAtivo?' active':'');
+    btn.textContent = nome;
+    btn.onclick = ()=>{ funilConsultorAtivo = nome; renderFunilTabs(); carregarFunilAtivo(); };
+    tabsBox.appendChild(btn);
+  });
+}
+
+function carregarFunilAtivo(){
+  if(funilCache[funilConsultorAtivo]) renderFunil();
+  else carregarFunil(funilConsultorAtivo);
+}
+
+async function carregarFunil(consultor){
+  const tbody = document.querySelector('#funilTable tbody'); tbody.innerHTML='';
+  document.getElementById('funilEmpty').style.display = 'block';
+  document.getElementById('funilEmpty').textContent = 'Carregando funil...';
+  try{
+    const url = `${API_URL}?tipo=pipeline&consultor=${encodeURIComponent(consultor)}&token=${encodeURIComponent(PIPELINE_TOKEN)}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if(json.erro) throw new Error(json.erro);
+    funilCache[consultor] = (json.pipeline && json.pipeline[consultor]) || [];
+    renderFunil();
+  } catch(err){
+    document.getElementById('funilEmpty').style.display='block';
+    document.getElementById('funilEmpty').textContent = 'Erro ao carregar o funil (' + err.message + ').';
+  }
+}
+
+function renderFunil(){
+  const lista = funilCache[funilConsultorAtivo] || [];
+  const tbody = document.querySelector('#funilTable tbody'); tbody.innerHTML='';
+  document.getElementById('funilEmpty').style.display = lista.length ? 'none' : 'block';
+  document.getElementById('funilEmpty').textContent = 'Nenhum cliente cadastrado ainda.';
+  document.getElementById('funilContagem').textContent = `${lista.length} cliente(s) no funil de ${funilConsultorAtivo}`;
+
+  lista.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="text-align:left;">${item.cliente||'—'}</td>
+      <td style="text-align:left;">${item.arquiteto||'—'}</td>
+      <td>${brl(item.orcamento)}</td>
+      <td style="text-align:left;">${item.status||'—'}</td>
+      <td style="text-align:left;">${item.etapa||'—'}</td>
+      <td><span class="badge-venda ${item.possivelVenda?'sim':'nao'}">${item.possivelVenda?'Sim':'Não'}</span></td>`;
+    tr.addEventListener('click', ()=> abrirModal(item));
+    tbody.appendChild(tr);
+  });
+
+  const totalPossivel = lista.filter(i=>i.possivelVenda).reduce((s,i)=>s+(Number(i.orcamento)||0),0);
+  const totalFunil = lista.reduce((s,i)=>s+(Number(i.orcamento)||0),0);
+  const qtdPossivel = lista.filter(i=>i.possivelVenda).length;
+  const statsBox = document.getElementById('funilStats'); statsBox.innerHTML='';
+  [
+    {lbl:'Possível fechamento este mês', val: brl(totalPossivel)},
+    {lbl:'Clientes marcados como possível venda', val: String(qtdPossivel)},
+    {lbl:'Total no funil (todos os status)', val: brl(totalFunil)}
+  ].forEach(s=>{
+    const div = document.createElement('div'); div.className='funil-stat';
+    div.innerHTML = `<div class="lbl">${s.lbl}</div><div class="val">${s.val}</div>`;
+    statsBox.appendChild(div);
+  });
+
+  // datalists de arquitetos/eletricistas já usados, pra facilitar digitação
+  const arquitetos = [...new Set(lista.map(i=>i.arquiteto).filter(Boolean))];
+  const eletricistas = [...new Set(lista.map(i=>i.eletricista).filter(Boolean))];
+  document.getElementById('listaArquitetos').innerHTML = arquitetos.map(a=>`<option value="${a}">`).join('');
+  document.getElementById('listaEletricistas').innerHTML = eletricistas.map(el=>`<option value="${el}">`).join('');
+}
+
+function abrirModal(item){
+  funilEditandoId = item ? item.id : null;
+  document.getElementById('modalTitulo').textContent = item ? 'Editar cliente' : 'Novo cliente';
+  document.getElementById('formMsg').textContent = '';
+  document.getElementById('btnExcluirCliente').style.display = item ? 'inline-block' : 'none';
+
+  document.getElementById('fCliente').value = item?.cliente || '';
+  document.getElementById('fCodCliente').value = item?.codCliente || '';
+  document.getElementById('fArquiteto').value = item?.arquiteto || '';
+  document.getElementById('fOrcamento').value = item?.orcamento || '';
+  document.getElementById('fEletricista').value = item?.eletricista || '';
+  document.getElementById('fEntradaProjeto').value = item?.entradaProjeto || '';
+  document.getElementById('fApresentacaoProjeto').value = item?.apresentacaoProjeto || '';
+  document.getElementById('fUltimoContato').value = item?.ultimoContato || '';
+  document.getElementById('fNovoContato').value = item?.novoContato || '';
+  document.getElementById('fVisitas').value = item?.visitas || '';
+  document.getElementById('fStatus').value = item?.status || '';
+  document.getElementById('fEtapa').value = item?.etapa || '';
+  document.getElementById('fObs').value = item?.obs || '';
+  document.getElementById('fPossivelVenda').checked = !!item?.possivelVenda;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function fecharModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  funilEditandoId = null;
+}
+
+document.getElementById('btnCancelarModal').addEventListener('click', fecharModal);
+document.getElementById('btnNovoCliente').addEventListener('click', ()=> abrirModal(null));
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') fecharModal(); });
+
+document.getElementById('formCliente').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById('formMsg');
+  const btnSalvar = document.getElementById('btnSalvarCliente');
+  msg.textContent = ''; btnSalvar.disabled = true; btnSalvar.textContent = 'Salvando...';
+
+  const dados = {
+    cliente: document.getElementById('fCliente').value.trim(),
+    codCliente: document.getElementById('fCodCliente').value.trim(),
+    arquiteto: document.getElementById('fArquiteto').value.trim(),
+    orcamento: parseFloat(document.getElementById('fOrcamento').value) || 0,
+    eletricista: document.getElementById('fEletricista').value.trim(),
+    entradaProjeto: document.getElementById('fEntradaProjeto').value,
+    apresentacaoProjeto: document.getElementById('fApresentacaoProjeto').value,
+    ultimoContato: document.getElementById('fUltimoContato').value,
+    novoContato: document.getElementById('fNovoContato').value.trim(),
+    visitas: parseInt(document.getElementById('fVisitas').value) || 0,
+    status: document.getElementById('fStatus').value.trim(),
+    etapa: document.getElementById('fEtapa').value.trim(),
+    obs: document.getElementById('fObs').value.trim(),
+    possivelVenda: document.getElementById('fPossivelVenda').checked
+  };
+
+  if(!dados.cliente){
+    msg.textContent = 'Preencha o nome do cliente.';
+    btnSalvar.disabled=false; btnSalvar.textContent='Salvar';
+    return;
+  }
+
+  const payload = {
+    token: PIPELINE_TOKEN,
+    consultor: funilConsultorAtivo,
+    acao: funilEditandoId ? 'atualizar' : 'criar',
+    id: funilEditandoId,
+    dados: dados
+  };
+
+  try{
+    const res = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.erro || 'falha ao salvar');
+    fecharModal();
+    delete funilCache[funilConsultorAtivo];
+    await carregarFunil(funilConsultorAtivo);
+  } catch(err){
+    msg.textContent = 'Erro ao salvar: ' + err.message;
+  } finally {
+    btnSalvar.disabled = false; btnSalvar.textContent = 'Salvar';
+  }
+});
+
+document.getElementById('btnExcluirCliente').addEventListener('click', async ()=>{
+  if(!funilEditandoId) return;
+  if(!confirm('Excluir esse cliente do funil? Essa ação não pode ser desfeita.')) return;
+  const msg = document.getElementById('formMsg');
+  try{
+    const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({
+      token: PIPELINE_TOKEN, consultor: funilConsultorAtivo, acao:'excluir', id: funilEditandoId
+    }) });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.erro || 'falha ao excluir');
+    fecharModal();
+    delete funilCache[funilConsultorAtivo];
+    await carregarFunil(funilConsultorAtivo);
+  } catch(err){
+    msg.textContent = 'Erro ao excluir: ' + err.message;
+  }
+});
+
 setInterval(()=>{ if(usuarioAtual) carregarDados(); }, 5*60*1000);
+setInterval(()=>{ if(usuarioAtual) { delete funilCache[funilConsultorAtivo]; carregarFunilAtivo(); } }, 5*60*1000);
 </script>
 </body>
 </html>
